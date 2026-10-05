@@ -1,0 +1,39 @@
+name: Mettre à jour le hub
+
+on:
+  schedule:
+    # Toutes les 30 min de 4h à 22h59 UTC = 6h–1h (heure d'été) / 5h–0h (heure d'hiver), heure de Paris
+    - cron: "*/30 4-22 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: hub
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Récupérer les news et les matchs
+        run: node scripts/update.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
