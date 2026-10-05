@@ -1,0 +1,3 @@
+Dépose ici les logos des équipes en PNG, nommés avec la clé de l'équipe :
+nan.png (Nanterre), phi.png (76ers), eur.png (EuroLeague), om.png (OM), phs.png (Phillies), tor.png (Blue Jays).
+Idéalement carrés, fond transparent, 256 px.
