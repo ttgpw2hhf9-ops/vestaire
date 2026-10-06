@@ -55,6 +55,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .spoil{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border-radius:18px;background:rgba(255,255,255,.08);font-size:12px;color:var(--bar-fg)}
 .spoil[aria-pressed="true"]{background:rgba(255,255,255,.16)}
 .spoil svg{width:18px;height:18px}
+.spoil{white-space:nowrap;flex:none}
+.spoil[disabled]{opacity:.45;cursor:default}
+@media (max-width:380px){.brand{font-size:21px}.spoil{padding:0 9px}}
+.appbar{gap:8px}
+.spoil .cnt{font-family:var(--f-mono);font-size:10px;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--accent);color:var(--accent-ink);text-align:center}
 
 .sports{display:flex;gap:2px;padding:6px 9px 0;overflow-x:auto;scrollbar-width:none}
 .sports::-webkit-scrollbar,.teams::-webkit-scrollbar,.cats::-webkit-scrollbar{display:none}
@@ -208,7 +213,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
   <header class="top">
     <div class="appbar">
       <div class="brand">Vestiaire</div>
-      <button class="spoil" id="reload" aria-label="Actualiser"></button>
+      <button class="spoil" id="allread" data-allread="1"></button><button class="spoil" id="reload" aria-label="Actualiser"></button>
     </div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
   </header>
@@ -272,17 +277,24 @@ const I={
  src:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>',
  sync:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ checkAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12.5l4 4L14 8M10 16.5l1 1L22 7"/></svg>',
  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>'
 };
 
-function statusHtml(nUnread){
-  const allRead=nUnread?` <button class="lnk" data-allread="1">Tout marquer comme lu (${nUnread})</button>`:"";
+// Non lus de la sélection affichée (sport/équipe, et catégorie dans l'Inbox)
+const visibleUnread=()=>D.articles.filter(a=>!isRead(a.id)&&inScope(a)&&(ui.view!=="inbox"||ui.cat==="all"||a.cat===ui.cat));
+function statusHtml(){
+  const allRead="";
   if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span></div>`;
   if(!D.updatedAt)return "";
   const old=Date.now()-Date.parse(D.updatedAt)>3*36e5;
   return `<div class="status ${old?"err":"ok"}">${old?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${old?" · la mise à jour automatique semble en pause":""}</span>${allRead}</div>`;
 }
 function renderTop(){
+  const toMark=visibleUnread().length;
+  $("allread").disabled=!toMark;
+  $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
+  $("allread").innerHTML=`${I.checkAll}Tout lu`;
   $("reload").innerHTML=`<span class="${loading?"spin":""}">${I.sync}</span>Actualiser`;
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
@@ -300,8 +312,7 @@ function row(a){return `<button class="msg ${isRead(a.id)?"":"unread"}" data-msg
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
   const list=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat));
-  const unreadHere=list.filter(a=>!isRead(a.id)).length;
-  const h=statusHtml(unreadHere)+`<div class="cats" role="group" aria-label="Catégorie"><button class="chip" data-cat="all" aria-pressed="${ui.cat==="all"}">Tout</button>`+Object.entries(CATS).map(([k,l])=>`<button class="chip" data-cat="${k}" aria-pressed="${ui.cat===k}">${l}</button>`).join("")+`</div>`;
+  const h=statusHtml()+`<div class="cats" role="group" aria-label="Catégorie"><button class="chip" data-cat="all" aria-pressed="${ui.cat==="all"}">Tout</button>`+Object.entries(CATS).map(([k,l])=>`<button class="chip" data-cat="${k}" aria-pressed="${ui.cat===k}">${l}</button>`).join("")+`</div>`;
   if(!loaded)return h+`<p class="empty">${loadErr?"":"Chargement…"}</p>`;
   if(!list.length)return h+`<p class="empty">Rien dans cette sélection pour l'instant.</p>`;
   return h+grouped(list);
@@ -380,7 +391,7 @@ document.addEventListener("click",e=>{
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
   else if(d.cat){ui.cat=d.cat}
-  else if(d.allread){D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat)).forEach(a=>{if(!isRead(a.id))P.read.push(a.id)});saveP()}
+  else if(d.allread){visibleUnread().forEach(a=>P.read.push(a.id));saveP()}
   else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}
