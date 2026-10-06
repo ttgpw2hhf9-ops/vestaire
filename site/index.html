@@ -339,10 +339,8 @@ function statusHtml(){
   const allRead="";
   if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span></div>`;
   if(!D.updatedAt)return "";
-  if(upd.state==="run")return `<div class="status ok"><span class="spin">${I.sync}</span><span>Mise à jour en cours… les nouvelles news arrivent d'ici 2 à 3 min.</span></div>`;
-  const updErr=upd.state==="err"?`<div class="status err">${I.warn}<span>Mise à jour impossible : ${esc(upd.msg)}. Voir l'onglet Sources.</span></div>`:"";
   const old=Date.now()-Date.parse(D.updatedAt)>3*36e5;
-  return `<div class="status ${old?"err":"ok"}">${old?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${old?" · la mise à jour automatique semble en pause":""}</span>${allRead}</div>`+updErr;
+  return `<div class="status ${old?"err":"ok"}">${old?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${old?" · la mise à jour automatique semble en pause":""}</span>${allRead}</div>`;
 }
 function renderTop(){
   const toMark=visibleUnread().length;
@@ -423,7 +421,7 @@ function renderTeams(){
 function editUrl(path){if(!D.repo)return null;return `https://github.com/${D.repo}/edit/main/${path}`}
 function renderSources(){
   const T=TEAMS(),sp=ui.sport==="all"?sports():[ui.sport];
-  let h=`<div class="pad"><h2 class="h2">Sources</h2><p class="lead">Mise à jour automatique toutes les 30 min, de 6h à minuit environ. Les articles s'ouvrent sur le site d'origine.</p>`;
+  let h=`<div class="pad"><h2 class="h2">Sources</h2><p class="lead">Mise à jour automatique toutes les 15 min, de 6h à minuit environ. Les articles s'ouvrent sur le site d'origine.</p>`;
   for(const s of sp){
     const scopes=["sport:"+s,...teamsOf(s)].filter(sc=>!isTeamSel()||sc===ui.team);
     const blocks=scopes.map(sc=>{const list=D.sources.filter(x=>x.scope===sc);if(!list.length)return "";
@@ -435,8 +433,6 @@ function renderSources(){
   const ds=Object.entries(D.dataStatus||{});
   if(ds.length)h+=`<div class="sec">Résultats et calendriers</div><div class="card">${ds.map(([k,v])=>`<div class="src-row"><div class="src-main"><b>${esc(T[k]?.name||k)}</b><div class="hint" style="color:${v==="ok"?"var(--win)":"var(--loss)"}">${v==="ok"?"OK":esc(v)}</div></div></div>`).join("")}</div>`;
   if((D.exclure||[]).length)h+=`<div class="sec">Mots exclus</div><div class="card"><p class="lead" style="margin:0">Les articles qui contiennent l'un de ces mots sont ignorés : ${D.exclure.map(w=>`<span class="tag lang">${esc(w)}</span>`).join(" ")}</p><p class="hint">Liste « exclure » dans sources.json.</p></div>`;
-  const tok=ghToken();
-  h+=`<div class="sec">Mise à jour à l'ouverture</div><div class="card">${tok?`<p class="lead" style="margin:0">Activée sur cet appareil : à chaque ouverture (si les news ont plus de 10 min), l'appli demande une mise à jour à GitHub. Elle arrive 2 à 3 min plus tard.</p><div class="actions"><button class="btn" data-tok-del="1">Désactiver sur cet appareil</button></div>`:`<p class="lead" style="margin:0">Colle ici ton jeton GitHub (droit « Actions » sur le dépôt) pour que l'appli lance une mise à jour à chaque ouverture. Il reste uniquement sur cet appareil.</p><div class="actions"><input id="tokIn" type="password" autocomplete="off" placeholder="github_pat_…" style="flex:1 1 100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--panel);color:var(--fg);font:inherit"><button class="btn primary" data-tok-save="1">Activer</button></div>`}</div>`;
   const e=editUrl("sources.json");
   h+=`<div class="card"><h4>Modifier</h4><p class="lead">Les équipes et les sites se règlent dans le fichier <b>sources.json</b> sur GitHub. Les logos se déposent dans le dossier <b>site/logos</b> (nom : clé de l'équipe, ex. <b>nan.png</b>).</p>${e?`<a class="btn primary" href="${esc(e)}" target="_blank" rel="noopener">Modifier sources.json sur GitHub</a>`:""}</div></div>`;
   return h;
@@ -461,9 +457,7 @@ function render(){renderTop();const v=ui.view;$("screen").innerHTML=v==="saved"?
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
-  if(b.id==="reload"){load().then(()=>triggerUpdate(true));return}
-  if(d.tokSave){const v=($("tokIn")?.value||"").trim();if(!v)return;try{localStorage.setItem(TOKEN_KEY,v)}catch(e){}upd={state:null,msg:"",since:0};render();triggerUpdate(true);return}
-  if(d.tokDel){try{localStorage.removeItem(TOKEN_KEY)}catch(e){}upd={state:null,msg:"",since:0};render();return}
+  if(b.id==="reload"){load();return}
   if(d.view){ui.view=d.view;ui.open=null;$("screen").scrollTop=0;saveUi()}
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
@@ -483,36 +477,11 @@ document.addEventListener("click",e=>{
   else return;
   render();
 });
-// ---- Mise à jour à l'ouverture : lance le robot GitHub (jeton gardé sur l'appareil) puis attend les nouvelles données ----
-const TOKEN_KEY="vh-gh-token";
-const ghToken=()=>{try{return localStorage.getItem(TOKEN_KEY)||""}catch(e){return ""}};
-let upd={state:null,msg:"",since:0};
-async function triggerUpdate(force){
-  const tok=ghToken();if(!tok||!D.repo)return false;
-  const age=D.updatedAt?Date.now()-Date.parse(D.updatedAt):1e12;
-  const lastAsk=+(LS("vh-last-dispatch")||0);
-  if(!force&&(age<10*60e3||Date.now()-lastAsk<8*60e3))return false;
-  if(force&&Date.now()-lastAsk<2*60e3)return false;
-  if(upd.state==="run")return true;
-  try{
-    const r=await fetch(`https://api.github.com/repos/${D.repo}/actions/workflows/update.yml/dispatches`,{method:"POST",headers:{"Authorization":"Bearer "+tok,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body:JSON.stringify({ref:"main"})});
-    if(r.status!==204)throw new Error(r.status===401?"jeton refusé ou expiré":r.status===403||r.status===404?"jeton sans le droit « Actions »":"HTTP "+r.status);
-    LS("vh-last-dispatch",Date.now());upd={state:"run",msg:"",since:Date.now()};render();poll(D.updatedAt);return true;
-  }catch(err){upd={state:"err",msg:err.message,since:Date.now()};render();return false}
-}
-async function poll(before){
-  for(let i=0;i<20&&upd.state==="run";i++){
-    await new Promise(r=>setTimeout(r,i<3?40e3:20e3));
-    try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();if(j.updatedAt!==before){D=j;LS("vh-cache",D);upd={state:null,msg:"",since:0};render();return}}}catch(e){}
-  }
-  if(upd.state==="run"){upd={state:"err",msg:"la mise à jour prend plus de temps que prévu",since:Date.now()};render()}
-}
 async function load(){
   loading=true;render();
   try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);D=await r.json();loaded=true;loadErr=null;LS("vh-cache",D)}
   catch(err){loadErr=err.message;const c=LS("vh-cache");if(c&&!loaded){D=c;loaded=true}}
   loading=false;render();
-  triggerUpdate(false);
 }
 const cached=LS("vh-cache");if(cached){D=cached;loaded=true}
 render();load();
