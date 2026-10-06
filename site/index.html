@@ -268,11 +268,62 @@ const SPORT_ORDER=["Basket","Foot","Baseball","Rugby","F1","Cyclisme"];
 const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"],Rugby:["RUG","#7a1f2b","#e8e8e8"],F1:["F1","#d0021b","#1a1a1a"],Cyclisme:["VÉLO","#e0a800","#1a1a1a"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
 const ui={view:"inbox",sport:"all",team:"all",cat:"all",open:null};
-let P={read:[],saved:[],savedItems:{},order:[],hide:{},rev:[]};
+let P={read:[],saved:[],savedItems:{},order:[],hide:{},rev:[],rt:{},ut:{},st:{},sut:{},ot:0,ht:0};
 const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 Object.assign(ui,LS("vh-ui")||{});ui.open=null;Object.assign(P,LS("vh-prefs")||{});
 const saveUi=()=>LS("vh-ui",{sport:ui.sport,team:ui.team,view:ui.view});
-const saveP=()=>{const ids=new Set(D.articles.map(a=>a.id));if(D.articles.length){P.read=P.read.filter(i=>ids.has(i));P.rev=(P.rev||[]).filter(i=>ids.has(i))}LS("vh-prefs",P)};
+const saveP=(fromSync)=>{const ids=new Set(D.articles.map(a=>a.id));if(D.articles.length){P.read=P.read.filter(i=>ids.has(i));P.rev=(P.rev||[]).filter(i=>ids.has(i))}if(!fromSync){stamp();syncSoon()}LS("vh-prefs",P)};
+// ---- Synchronisation entre appareils (Gist privé GitHub, jeton gardé sur l'appareil) ----
+const SYNC_KEY="vh-sync",SYNC_FILE="vestiaire-sync.json";
+let syncCfg=LS(SYNC_KEY),syncInfo={busy:false,err:"",at:0},syncTimer=null;
+const snapOf=()=>({read:[...P.read],saved:[...P.saved],order:JSON.stringify(P.order||[]),hide:JSON.stringify(P.hide||{})});
+let lastSnap=snapOf();
+// Note l'heure de chaque changement (lu / non lu, mis de côté / retiré, ordre, scores cachés)
+function stamp(){const now=Date.now();for(const k of ["rt","ut","st","sut"])P[k]=P[k]||{};
+  const pr=new Set(lastSnap.read),cr=new Set(P.read),alive=new Set(D.articles.map(a=>a.id));
+  for(const id of cr)if(!pr.has(id))P.rt[id]=now;
+  for(const id of pr)if(!cr.has(id)&&alive.has(id))P.ut[id]=now;
+  const ps=new Set(lastSnap.saved),cs=new Set(P.saved);
+  for(const id of cs)if(!ps.has(id))P.st[id]=now;
+  for(const id of ps)if(!cs.has(id))P.sut[id]=now;
+  if(JSON.stringify(P.order||[])!==lastSnap.order)P.ot=now;if(JSON.stringify(P.hide||{})!==lastSnap.hide)P.ht=now;
+  lastSnap=snapOf()}
+function mergeRemote(R){
+  const mx=(a,b)=>{const o={...(a||{})};for(const k in (b||{}))o[k]=Math.max(o[k]||0,b[k]);return o};
+  for(const id of P.read)P.rt[id]=P.rt[id]||1;for(const id of P.saved)P.st[id]=P.st[id]||1;
+  P.rt=mx(P.rt,R.rt);P.ut=mx(P.ut,R.ut);P.st=mx(P.st,R.st);P.sut=mx(P.sut,R.sut);
+  const old=Date.now()-21*864e5;for(const k of ["rt","ut"])for(const id in P[k])if(P[k][id]<old&&P[k][id]>1)delete P[k][id];
+  const alive=new Set(D.articles.map(a=>a.id));
+  P.read=Object.keys(P.rt).filter(id=>P.rt[id]>(P.ut[id]||0)&&(!D.articles.length||alive.has(id)));
+  P.saved=Object.keys(P.st).filter(id=>P.st[id]>(P.sut[id]||0)).sort((x,y)=>P.st[x]-P.st[y]);
+  const items={...(R.savedItems||{}),...(P.savedItems||{})};P.savedItems={};for(const id of P.saved)if(items[id])P.savedItems[id]=items[id];
+  if((R.ot||0)>(P.ot||0)){P.order=R.order||[];P.ot=R.ot}
+  if((R.ht||0)>(P.ht||0)){P.hide=R.hide||{};P.ht=R.ht}
+  lastSnap=snapOf()}
+const payload=()=>({v:1,rt:P.rt,ut:P.ut,st:P.st,sut:P.sut,savedItems:P.savedItems,order:P.order||[],ot:P.ot||0,hide:P.hide||{},ht:P.ht||0});
+async function gh(path,opt={},tok=syncCfg&&syncCfg.token){
+  const r=await fetch("https://api.github.com/"+path,{method:opt.method||"GET",cache:"no-store",headers:{"Authorization":"Bearer "+tok,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body:opt.body?JSON.stringify(opt.body):undefined});
+  if(!r.ok)throw new Error(r.status===401?"jeton refusé ou expiré":r.status===403||r.status===404?"jeton sans le droit « gist »":"GitHub HTTP "+r.status);
+  return r.json()}
+async function sync(){
+  if(!syncCfg||syncInfo.busy)return;syncInfo.busy=true;
+  try{
+    const g=await gh("gists/"+syncCfg.gist);const f=g.files&&g.files[SYNC_FILE];
+    let R={};if(f){const txt=f.truncated?await (await fetch(f.raw_url,{cache:"no-store"})).text():f.content;try{R=JSON.parse(txt||"{}")}catch(e){R={}}}
+    stamp();mergeRemote(R);saveP(true);
+    const out=payload(),same=JSON.stringify(out)===JSON.stringify({v:1,rt:R.rt||{},ut:R.ut||{},st:R.st||{},sut:R.sut||{},savedItems:R.savedItems||{},order:R.order||[],ot:R.ot||0,hide:R.hide||{},ht:R.ht||0});
+    if(!same)await gh("gists/"+syncCfg.gist,{method:"PATCH",body:{files:{[SYNC_FILE]:{content:JSON.stringify(out)}}}});
+    syncInfo.err="";syncInfo.at=Date.now();
+  }catch(e){syncInfo.err=e.message}
+  syncInfo.busy=false;render()}
+function syncSoon(){if(!syncCfg)return;clearTimeout(syncTimer);syncTimer=setTimeout(sync,2500)}
+async function syncSetup(tok){
+  syncInfo={busy:true,err:"",at:0};render();
+  try{
+    const list=await gh("gists?per_page=100",{},tok);let g=list.find(x=>x.files&&x.files[SYNC_FILE]);
+    if(!g)g=await gh("gists",{method:"POST",body:{description:"Le Vestiaire – synchronisation (lus, à lire, réglages)",public:false,files:{[SYNC_FILE]:{content:"{}"}}}},tok);
+    syncCfg={token:tok,gist:g.id};LS(SYNC_KEY,syncCfg);syncInfo.busy=false;await sync();
+  }catch(e){syncInfo={busy:false,err:e.message,at:0};render()}}
 
 const $=id=>document.getElementById(id);
 const WIDE=()=>matchMedia("(min-width:900px) and (orientation:landscape)").matches;
@@ -437,6 +488,8 @@ function renderSources(){
   const ds=Object.entries(D.dataStatus||{});
   if(ds.length)h+=`<div class="sec">Résultats et calendriers</div><div class="card">${ds.map(([k,v])=>`<div class="src-row"><div class="src-main"><b>${esc(T[k]?.name||k)}</b><div class="hint" style="color:${v==="ok"?"var(--win)":"var(--loss)"}">${v==="ok"?"OK":esc(v)}</div></div></div>`).join("")}</div>`;
   if((D.exclure||[]).length)h+=`<div class="sec">Mots exclus</div><div class="card"><p class="lead" style="margin:0">Les articles qui contiennent l'un de ces mots sont ignorés : ${D.exclure.map(w=>`<span class="tag lang">${esc(w)}</span>`).join(" ")}</p><p class="hint">Liste « exclure » dans sources.json.</p></div>`;
+  h+=`<div class="sec">Synchronisation entre appareils</div><div class="card">`+(syncCfg?`<p class="lead" style="margin:0">Activée sur cet appareil : articles lus, « À lire », ordre des équipes et scores cachés sont partagés avec tes autres appareils.</p><p class="hint" style="color:${syncInfo.err?"var(--loss)":"var(--win)"}">${syncInfo.busy?"Synchronisation en cours…":syncInfo.err?"Erreur : "+esc(syncInfo.err):syncInfo.at?"Dernière synchro à "+hm(new Date(syncInfo.at).toISOString()):"En attente"}</p><div class="actions"><button class="btn" data-sync-now="1">Synchroniser maintenant</button><button class="btn" data-sync-off="1">Désactiver ici</button></div>`
+    :`<p class="lead" style="margin:0">Pour retrouver tes articles lus et « À lire » sur tous tes appareils, colle ici ton jeton GitHub (droit « gist »). Il reste uniquement sur cet appareil.</p>${syncInfo.err?`<p class="hint" style="color:var(--loss)">Erreur : ${esc(syncInfo.err)}</p>`:""}<div class="actions"><input id="syncTok" type="password" autocomplete="off" placeholder="ghp_… ou github_pat_…" style="flex:1 1 100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--panel);color:var(--fg);font:inherit"><button class="btn primary" data-sync-on="1" ${syncInfo.busy?"disabled":""}>${syncInfo.busy?"Activation…":"Activer"}</button></div>`)+`</div>`;
   const e=editUrl("sources.json");
   h+=`<div class="card"><h4>Modifier</h4><p class="lead">Les équipes et les sites se règlent dans le fichier <b>sources.json</b> sur GitHub. Les logos se déposent dans le dossier <b>site/logos</b> (nom : clé de l'équipe, ex. <b>nan.png</b>).</p>${e?`<a class="btn primary" href="${esc(e)}" target="_blank" rel="noopener">Modifier sources.json sur GitHub</a>`:""}</div></div>`;
   return h;
@@ -462,6 +515,9 @@ function render(){renderTop();const v=ui.view;$("screen").innerHTML=v==="saved"?
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(b.id==="reload"){load();return}
+  if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
+  if(d.syncNow){sync();return}
+  if(d.syncOff){syncCfg=null;try{localStorage.removeItem(SYNC_KEY)}catch(e){}render();return}
   if(d.view){ui.view=d.view;ui.open=null;$("screen").scrollTop=0;saveUi()}
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
@@ -486,6 +542,7 @@ async function load(){
   try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);D=await r.json();loaded=true;loadErr=null;LS("vh-cache",D)}
   catch(err){loadErr=err.message;const c=LS("vh-cache");if(c&&!loaded){D=c;loaded=true}}
   loading=false;render();
+  if(loaded)sync();
 }
 const cached=LS("vh-cache");if(cached){D=cached;loaded=true}
 render();load();
