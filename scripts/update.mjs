@@ -118,6 +118,7 @@ for (const src of cfg.sources) {
     } else {
       const t = teamByKey[src.scope]; if (!t) continue;
       if ((src.filter || (fellBack && src.filterIfFallback)) && !matches(t, text)) continue;
+      if (src.exclude && matches({ keywords: src.exclude }, text)) continue; // mots à écarter pour ce site (ex. hockey)
       team = t.key; sport = t.sport;
     }
     const date = it.date && !isNaN(Date.parse(it.date)) ? it.date : new Date().toISOString();
