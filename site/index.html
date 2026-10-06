@@ -208,6 +208,16 @@ tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight
 .txt p{margin:0 0 12px}
 a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
 .hint{font-size:12px;color:var(--muted);margin-top:6px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 12px}
+.btn svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.subj.masked{color:var(--muted);font-style:italic;font-weight:500}
+.subj.masked svg{width:15px;height:15px;vertical-align:-2px;margin-right:5px}
+.sport .eye svg{width:13px;height:13px;margin-left:5px;vertical-align:-1px;opacity:.75}
+.tgl{flex:none;width:48px;height:28px;border-radius:14px;background:var(--line);position:relative;transition:background .2s;border:0}
+.tgl span{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s}
+.tgl[aria-checked="true"]{background:var(--accent)}
+.tgl[aria-checked="true"] span{left:23px}
+.tgl[disabled]{opacity:.5}
 .screen{overflow-x:hidden}
 .kv dd,.kv dt{min-width:0;overflow-wrap:anywhere}
 .card{min-width:0;max-width:100%}
@@ -241,11 +251,11 @@ const SPORT_ORDER=["Basket","Foot","Baseball","Rugby","F1","Cyclisme"];
 const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"],Rugby:["RUG","#7a1f2b","#e8e8e8"],F1:["F1","#d0021b","#1a1a1a"],Cyclisme:["VÉLO","#e0a800","#1a1a1a"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
 const ui={view:"inbox",sport:"all",team:"all",cat:"all",open:null};
-let P={read:[],saved:[],savedItems:{},order:[]};
+let P={read:[],saved:[],savedItems:{},order:[],hide:{},rev:[]};
 const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 Object.assign(ui,LS("vh-ui")||{});ui.open=null;Object.assign(P,LS("vh-prefs")||{});
 const saveUi=()=>LS("vh-ui",{sport:ui.sport,team:ui.team,view:ui.view});
-const saveP=()=>{const ids=new Set(D.articles.map(a=>a.id));if(D.articles.length)P.read=P.read.filter(i=>ids.has(i));LS("vh-prefs",P)};
+const saveP=()=>{const ids=new Set(D.articles.map(a=>a.id));if(D.articles.length){P.read=P.read.filter(i=>ids.has(i));P.rev=(P.rev||[]).filter(i=>ids.has(i))}LS("vh-prefs",P)};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -265,6 +275,10 @@ const chipSources=sp=>{const seen=new Set();return D.sources.filter(x=>x.chip&&x
 const sportOf=a=>{const t=TEAMS()[a.team];return t?t.sport:a.sport};
 function inScope(a){if(isSrc())return a.source===ui.team.slice(4)&&(ui.sport==="all"||sportOf(a)===ui.sport);if(!a.team||!TEAMS()[a.team])return ui.team==="all"&&(ui.sport==="all"||ui.sport===a.sport);return scopeKeys().includes(a.team)}
 const isRead=id=>P.read.includes(id),isSaved=id=>P.saved.includes(id);
+// Scores cachés : par sport ("sport:Basket") ou par équipe ("phi"), gardé sur l'appareil
+const SCORE_RE=/(^|[^0-9])\d{1,3}\s?[-–]\s?\d{1,3}([^0-9]|$)/;
+const hideOn=(team,sport)=>!!(P.hide&&((team&&P.hide[team])||P.hide["sport:"+sport]));
+const isMasked=a=>hideOn(a.team,sportOf(a))&&(a.cat==="resultat"||SCORE_RE.test(a.title))&&!(P.rev||[]).includes(a.id);
 const allArts=()=>{const ids=new Set(D.articles.map(a=>a.id));return [...D.articles,...P.saved.filter(i=>!ids.has(i)&&P.savedItems[i]).map(i=>P.savedItems[i])]};
 const findArt=id=>allArts().find(a=>a.id===id);
 
@@ -296,6 +310,7 @@ const I={
  checkAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12.5l4 4L14 8M10 16.5l1 1L22 7"/></svg>',
  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',
  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',
+ eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 8.5 4 9.5 6-.4.8-1.2 2-2.4 3.2M6.4 7.4C4.5 8.7 3.1 10.6 2.5 12c1 2 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>'
 };
 
@@ -320,14 +335,14 @@ function renderTop(){
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(sp.length&&!sp.includes(ui.sport)){ui.sport=sp[0];ui.team="all";saveUi()}
   if(loaded&&isTeamSel()&&!TEAMS()[ui.team])ui.team="all";if(loaded&&isSrc()&&!chipSources(ui.sport).some(x=>"src:"+x.name===ui.team))ui.team="all";
-  $("sports").innerHTML=sp.map(s=>[s,s]).map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
+  $("sports").innerHTML=sp.map(s=>[s,s]).map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${P.hide&&P.hide["sport:"+k]?`<span class="eye" title="Scores cachés">${I.eye}</span>`:""}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
-  $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
+  $("teams").innerHTML=teamsOf(ui.sport).filter(k=>T[k].chip!==false).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["src","Sources"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
-function row(a){return `<button class="msg ${isRead(a.id)?"":"unread"}" data-msg="${esc(a.id)}" style="--c1:${esc(aColor(a))}">${aCrest(a)}
-  <span class="body"><span class="from">${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span><span class="subj">${esc(a.title)}</span></span>
+function row(a){const m=isMasked(a),t=TEAMS()[a.team];return `<button class="msg ${isRead(a.id)?"":"unread"}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
+  <span class="body"><span class="from">${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>`}</span>
   <span class="right"><time>${hm(a.publishedAt)}</time>${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
@@ -349,24 +364,31 @@ function renderCal(){
   let h=`<div class="pad"><h2 class="h2">Agenda</h2><p class="lead">Heure de Paris.</p>`;
   if(!rows.length)return h+`<p class="empty">Aucun match connu pour cette sélection.</p></div>`;
   let last="";for(const g of rows){const k=dayKey(g.date);if(k!==last){h+=`<div class="sec">${esc(dayLabel(g.date))}</div>`;last=k}
-    const me=T[g.team].label||T[g.team].name;h+=`<div class="cal-row"><div class="when">${hm(g.date)}</div>${crest(g.team)}<div class="what"><b>${esc(g.home?me+" – "+g.opp:g.opp+" – "+me)}</b><div>${esc(g.comp||"")}</div></div></div>`}
+    const me=T[g.team].label||T[g.team].name;h+=`<div class="cal-row"><div class="when">${hm(g.date)}</div>${crest(g.team)}<div class="what"><b>${esc(g.label?g.opp:g.home?me+" – "+g.opp:g.opp+" – "+me)}</b><div>${esc(g.comp||"")}</div></div></div>`}
   return h+`</div>`;
 }
 function teamCard(k){
   const t=TEAMS()[k],d=D.teamData[k]||{};
   const nx=(d.next||[]).filter(g=>Date.parse(g.date)>Date.now()-3*36e5)[0];
   const form=(d.last||[]).slice(0,5).map(g=>g.result).filter(Boolean);
-  const st=d.standings;
+  const st=d.standings,lg=(d.last||[])[0],hid=hideOn(k,t.sport)&&!(ui.revT||{})[k];
+  const lastLine=lg&&lg.label?`<dt>Dernier</dt><dd>${esc(lg.label)}<br><span class="comp">${esc(lg.score||"")}</span></dd>`:form.length?`<dt>Forme</dt><dd><span class="form">${form.map(x=>`<i class="${x}">${x==="W"?"V":x==="L"?"D":"N"}</i>`).join("")}</span></dd>`:"";
   return `<div class="card"><div class="head">${crest(k,"lg")}<div><div class="t">${esc(t.name)}</div><div class="meta">${esc(t.comp||t.sport)}</div></div></div>
-   <dl class="kv"><dt>Prochain</dt><dd>${nx?`${nx.home?"vs":"@"} ${esc(nx.opp)}<br><span class="comp">${esc(dayLabel(nx.date))} · ${hm(nx.date)}${nx.comp?" · "+esc(nx.comp):""}</span>`:`<span class="comp">pas encore connu</span>`}</dd>
-   ${form.length?`<dt>Forme</dt><dd><span class="form">${form.map(x=>`<i class="${x}">${x==="W"?"V":x==="L"?"D":"N"}</i>`).join("")}</span></dd>`:""}</dl>
-   ${st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>Équipe</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
+   <dl class="kv"><dt>Prochain</dt><dd>${nx?`${nx.label?esc(nx.label):(nx.home?"vs ":"@ ")+esc(nx.opp)}<br><span class="comp">${esc(dayLabel(nx.date))} · ${hm(nx.date)}${nx.comp&&!nx.label?" · "+esc(nx.comp):""}</span>`:`<span class="comp">pas encore connu</span>`}</dd>
+   ${hid&&(lastLine||st)?`<dt>Résultats</dt><dd><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Cachés · afficher</button></dd>`:lastLine}</dl>
+   ${!hid&&st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
 }
 function renderTeams(){
   const T=TEAMS(),sp=isTeamSel()?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
   let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Mes équipes"}</h2>`;
   for(const s of sp){const keys=scopeKeys().filter(k=>T[k].sport===s);if(!keys.length)continue;if(!isTeamSel())h+=`<div class="sec">${esc(s)}</div>`;h+=keys.map(teamCard).join("")}
-  if(!isTeamSel())h=h.replace('<h2 class="h2">Mes équipes</h2>',`<div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Mes équipes</h2><button class="btn sm" data-reorder="1">${ui.reorder?"Terminé":"Modifier l'ordre"}</button></div>`);
+  if(!isTeamSel())h=h.replace('<h2 class="h2">Mes équipes</h2>',`<h2 class="h2">Mes équipes</h2><div class="tools"><button class="btn sm" data-reorder="1">Modifier l'ordre</button><button class="btn sm" data-hidecfg="1">${I.eye} Scores cachés</button></div>`);
+  if(ui.hidecfg){
+    let r=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Scores cachés</h2><button class="btn sm primary" data-hidecfg="1">Terminé</button></div><p class="lead">Les résultats et les titres avec un score sont masqués jusqu'à ce que tu les touches. Gardé sur cet appareil.</p>`;
+    for(const s of sports()){const sk="sport:"+s,on=!!P.hide[sk];r+=`<div class="sec">${esc(s)}</div><div class="card"><div class="src-row">${aCrest({sport:s})}<div class="src-main"><b>Tout le ${esc(s.toLowerCase())}</b><div class="hint">Toutes les news et équipes de ce sport</div></div><button class="tgl" role="switch" aria-checked="${on}" data-hide="${esc(sk)}" aria-label="Scores cachés : tout le ${esc(s)}"><span></span></button></div>`+
+      teamsOf(s).map(k=>{const v=on||!!P.hide[k];return `<div class="src-row ${on?"off":""}">${crest(k)}<div class="src-main"><b>${esc(TEAMS()[k].name)}</b></div><button class="tgl" role="switch" aria-checked="${v}" data-hide="${esc(k)}" ${on?"disabled":""} aria-label="Scores cachés : ${esc(TEAMS()[k].name)}"><span></span></button></div>`}).join("")+`</div>`}
+    return r+`</div>`;
+  }
   if(ui.reorder&&!isTeamSel()){
     let r=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Ordre des équipes</h2><button class="btn sm primary" data-reorder="1">Terminé</button></div><p class="lead">L'ordre des pastilles dans chaque sport. Gardé sur cet appareil.</p>`;
     for(const s of (ui.sport==="all"?sports():[ui.sport])){const keys=teamsOf(s);if(!keys.length)continue;r+=`<div class="sec">${esc(s)}</div><div class="card">`+keys.map((k,i)=>`<div class="src-row">${crest(k)}<div class="src-main"><b>${esc(TEAMS()[k].name)}</b></div><button class="icon-btn" data-move="${esc(k)}" data-dir="-1" aria-label="Monter ${esc(TEAMS()[k].name)}" ${i===0?"disabled":""}>${I.up}</button><button class="icon-btn" data-move="${esc(k)}" data-dir="1" aria-label="Descendre ${esc(TEAMS()[k].name)}" ${i===keys.length-1?"disabled":""}>${I.down}</button></div>`).join("")+`</div>`}
@@ -388,6 +410,7 @@ function renderSources(){
   }
   const ds=Object.entries(D.dataStatus||{});
   if(ds.length)h+=`<div class="sec">Résultats et calendriers</div><div class="card">${ds.map(([k,v])=>`<div class="src-row"><div class="src-main"><b>${esc(T[k]?.name||k)}</b><div class="hint" style="color:${v==="ok"?"var(--win)":"var(--loss)"}">${v==="ok"?"OK":esc(v)}</div></div></div>`).join("")}</div>`;
+  if((D.exclure||[]).length)h+=`<div class="sec">Mots exclus</div><div class="card"><p class="lead" style="margin:0">Les articles qui contiennent l'un de ces mots sont ignorés : ${D.exclure.map(w=>`<span class="tag lang">${esc(w)}</span>`).join(" ")}</p><p class="hint">Liste « exclure » dans sources.json.</p></div>`;
   const e=editUrl("sources.json");
   h+=`<div class="card"><h4>Modifier</h4><p class="lead">Les équipes et les sites se règlent dans le fichier <b>sources.json</b> sur GitHub. Les logos se déposent dans le dossier <b>site/logos</b> (nom : clé de l'équipe, ex. <b>nan.png</b>).</p>${e?`<a class="btn primary" href="${esc(e)}" target="_blank" rel="noopener">Modifier sources.json sur GitHub</a>`:""}</div></div>`;
   return h;
@@ -418,10 +441,14 @@ document.addEventListener("click",e=>{
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
   else if(d.cat){ui.cat=d.cat}
   else if(d.allread){visibleUnread().forEach(a=>P.read.push(a.id));saveP()}
+  else if(d.masked){P.rev=[...(P.rev||[]),d.msg];saveP()}
   else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}
-  else if(d.reorder){ui.reorder=!ui.reorder}
+  else if(d.reorder){ui.reorder=!ui.reorder;ui.hidecfg=false}
+  else if(d.hidecfg){ui.hidecfg=!ui.hidecfg;ui.reorder=false}
+  else if(d.hide){P.hide={...(P.hide||{}),[d.hide]:!P.hide?.[d.hide]};if(!P.hide[d.hide])delete P.hide[d.hide];saveP()}
+  else if(d.revteam){ui.revT={...(ui.revT||{}),[d.revteam]:true}}
   else if(d.move){moveTeam(d.move,+d.dir)}
   else if(d.teamOpen){const t=TEAMS()[d.teamOpen];ui.open=null;ui.view="teams";ui.sport=t.sport;ui.team=d.teamOpen;saveUi()}
   else if(b.id==="toggleRead"){isRead(ui.open)?P.read=P.read.filter(x=>x!==ui.open):P.read.push(ui.open);saveP()}

@@ -1,10 +1,11 @@
 {
   "_aide": "Fichier de configuration du hub. Modifie-le directement sur GitHub (icône crayon), puis « Commit changes ». La prochaine mise à jour (toutes les 30 min) prend les changements en compte.",
+  "exclure": ["pronostic", "pronostics", "prono", "pronos", "paris sportifs", "pari sportif", "parier", "cote du match", "cotes", "bonus de bienvenue", "code promo", "bookmaker"],
   "journal": { "label": "Journal", "url": "https://kiosque.lequipe.fr/" },
   "teams": [
     { "key": "nan", "name": "Nanterre 92", "label": "Nanterre", "short": "NAN", "sport": "Basket", "comp": "Betclic Élite · BCL", "c1": "#0d7a4f", "c2": "#e9e9e9",
       "keywords": ["nanterre"],
-      "data": { "type": "sofascore", "id": 53125 } },
+      "data": { "type": "tsdb", "id": 135245, "leagues": [4423, 4548] } },
     { "key": "phi", "name": "Philadelphia 76ers", "label": "76ers", "short": "PHI", "sport": "Basket", "comp": "NBA", "c1": "#006bb6", "c2": "#ed174c",
       "keywords": ["76ers", "sixers", "philadelphie", "philadelphia 76", "embiid", "maxey"],
       "data": { "type": "espn", "sport": "basketball/nba", "team": "phi" } },
@@ -20,9 +21,14 @@
       "keywords": ["blue jays", "jays", "toronto"],
       "data": { "type": "mlb", "id": 141 } },
     { "key": "lou", "name": "LOU Rugby", "label": "LOU", "short": "LOU", "sport": "Rugby", "comp": "Top 14", "c1": "#d71920", "c2": "#111111",
-      "keywords": ["LOU", "lou rugby", "lyon olympique universitaire", "lyonnais", "gerland", "matmut stadium"] },
+      "keywords": ["LOU", "lou rugby", "lyon olympique universitaire", "lyonnais", "gerland", "matmut stadium"],
+      "data": { "type": "tsdb", "id": 135341, "leagues": [4430] } },
     { "key": "fra", "name": "XV de France", "label": "XV de France", "short": "FRA", "sport": "Rugby", "comp": "Équipe de France", "c1": "#0b2a8a", "c2": "#e1000f",
-      "keywords": ["xv de france", "les bleus", "equipe de france", "galthie", "dupont", "tournee de novembre", "tests de novembre", "six nations"] }
+      "keywords": ["xv de france", "les bleus", "equipe de france", "galthie", "dupont", "tournee de novembre", "tests de novembre", "six nations"],
+      "data": { "type": "tsdb", "id": 137128 } },
+    { "key": "f1", "name": "Formule 1", "label": "F1", "short": "F1", "sport": "F1", "comp": "Championnat du monde", "c1": "#e10600", "c2": "#15151e", "chip": false,
+      "keywords": [],
+      "data": { "type": "f1" } }
   ],
   "sources": [
     { "name": "L'Équipe · Basket", "scope": "sport:Basket", "keep": "mine", "site": "https://www.lequipe.fr/Basket/",

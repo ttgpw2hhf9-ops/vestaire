@@ -76,6 +76,9 @@ export function category(title, desc) {
   return "news";
 }
 const sha = s => crypto.createHash("sha1").update(s).digest("hex").slice(0, 16);
+// Mots à exclure (sources.json > "exclure") : l'article est ignoré si son titre ou son résumé contient l'un d'eux
+const EXCL = (cfg.exclure || []).map(w => new RegExp(`(^|[^a-z0-9])${norm(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`));
+const excluded = text => EXCL.some(re => re.test(norm(text)));
 
 // ---------- articles ----------
 const teams = cfg.teams;
@@ -101,6 +104,7 @@ for (const src of cfg.sources) {
   for (const it of items) {
     if (src.urlMatch && !/news\.google\./.test(used) && !it.link.includes(src.urlMatch)) continue;
     const text = it.title + " " + it.desc;
+    if (excluded(text)) continue;
     let team = null, sport = null;
     if (src.scope.startsWith("sport:")) {
       sport = src.scope.slice(6);
@@ -186,6 +190,66 @@ async function sofascore(t) {
   });
   return { next, last, standings: null };
 }
+// TheSportsDB (clé publique gratuite) : Nanterre, LOU, XV de France
+const TS = "https://www.thesportsdb.com/api/v1/json/123/";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const TS_COMP = { "French LNB": "Betclic Élite", "Basketball Champions League": "BCL", "French Top 14": "Top 14", "European Rugby Champions Cup": "Champions Cup" };
+async function tsGet(path) { if (!process.env.NOSLEEP) await sleep(2100); return await get(TS + path, { json: true }) || {}; } // 30 requêtes/min max
+async function tsdb(t) {
+  const id = String(t.data.id), evs = new Map(); let ok = 0;
+  const add = a => { for (const e of a || []) if (e && (e.idHomeTeam === id || e.idAwayTeam === id)) evs.set(e.idEvent, e); };
+  try { add((await tsGet(`eventslast.php?id=${id}`)).results); ok++; } catch {}
+  try { add((await tsGet(`eventsnext.php?id=${id}`)).events); ok++; } catch {}
+  for (const l of t.data.leagues || []) for (let i = 0; i <= 2; i++) {
+    const d = new Date(now - i * DAY).toISOString().slice(0, 10);
+    try { add((await tsGet(`eventsday.php?d=${d}&l=${l}`)).events); ok++; } catch {}
+  }
+  if (!ok) throw new Error("TheSportsDB injoignable");
+  const next = [], last = [];
+  for (const e of evs.values()) {
+    const ts = e.strTimestamp ? e.strTimestamp + (/[zZ]|[+-]\d\d:?\d\d$/.test(e.strTimestamp) ? "" : "Z") : `${e.dateEvent}T${e.strTime || "18:00:00"}Z`;
+    const home = e.idHomeTeam === id;
+    const g = { id: "ts" + e.idEvent, date: iso(ts), opp: home ? e.strAwayTeam : e.strHomeTeam, home, comp: TS_COMP[e.strLeague] || e.strLeague || t.comp || "" };
+    const hs = e.intHomeScore, as = e.intAwayScore;
+    if (hs != null && hs !== "" && as != null && as !== "" && Date.parse(g.date) < now) {
+      const a = +(home ? hs : as), b = +(home ? as : hs);
+      last.push({ ...g, score: `${a}-${b}`, result: a > b ? "W" : a < b ? "L" : "D" });
+    } else if (Date.parse(g.date) > now - 3 * 36e5) next.push(g);
+  }
+  return { next, last, standings: null };
+}
+
+// F1 : base Jolpica (ex-Ergast), gratuite
+const GP = { Australian: "GP d'Australie", Chinese: "GP de Chine", Japanese: "GP du Japon", Bahrain: "GP de Bahreïn", "Saudi Arabian": "GP d'Arabie saoudite", Miami: "GP de Miami", "Emilia Romagna": "GP d'Émilie-Romagne", Monaco: "GP de Monaco", Spanish: "GP d'Espagne", "Barcelona-Catalunya": "GP de Barcelone", Canadian: "GP du Canada", Austrian: "GP d'Autriche", British: "GP de Grande-Bretagne", Belgian: "GP de Belgique", Hungarian: "GP de Hongrie", Dutch: "GP des Pays-Bas", Italian: "GP d'Italie", Madrid: "GP de Madrid", Azerbaijan: "GP d'Azerbaïdjan", Singapore: "GP de Singapour", "United States": "GP des États-Unis", "Mexico City": "GP du Mexique", "São Paulo": "GP de São Paulo", "Las Vegas": "GP de Las Vegas", Qatar: "GP du Qatar", "Abu Dhabi": "GP d'Abou Dhabi" };
+const gpName = r => { const k = r.raceName.replace(/ Grand Prix$/, ""); return GP[k] || "GP " + k; };
+const F1S = [["FirstPractice", "Essais libres 1"], ["SecondPractice", "Essais libres 2"], ["ThirdPractice", "Essais libres 3"], ["SprintQualifying", "Qualifs sprint"], ["Sprint", "Sprint"], ["Qualifying", "Qualifications"]];
+const at = s => iso(`${s.date}T${s.time || "12:00:00Z"}`);
+async function f1() {
+  const J = "https://api.jolpi.ca/ergast/f1/";
+  const races = (await get(J + "current.json", { json: true })).MRData.RaceTable.Races || [];
+  const sess = [];
+  for (const r of races) {
+    const name = gpName(r);
+    for (const [f, l] of F1S) if (r[f]?.date) sess.push({ id: `f1-${r.season}-${r.round}-${f}`, date: at(r[f]), label: `${name} · ${l}`, opp: name, home: true, comp: l });
+    sess.push({ id: `f1-${r.season}-${r.round}-Race`, date: at(r), label: `${name} · Course`, opp: name, home: true, comp: "Course", race: true });
+  }
+  const next = sess.filter(s => Date.parse(s.date) > now - 2 * 36e5).sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(0, 6);
+  let last = [];
+  try {
+    const lr = (await get(J + "current/last/results.json", { json: true })).MRData.RaceTable.Races[0];
+    if (lr) {
+      const top = (lr.Results || []).slice(0, 10).map(x => ({ pos: x.position, name: `${x.Driver.givenName[0]}. ${x.Driver.familyName}`, team: x.Constructor?.name || "", time: x.Time?.time || x.status || "", pts: x.points }));
+      last = [{ id: `f1-${lr.season}-${lr.round}-Race`, date: at(lr), label: gpName(lr), opp: gpName(lr), home: true, comp: "Course", score: top.slice(0, 3).map(x => `${x.pos}. ${x.name}`).join(" · "), top, season: lr.season, round: lr.round }];
+    }
+  } catch {}
+  let standings = null;
+  try {
+    const sl = (await get(J + "current/driverStandings.json", { json: true })).MRData.StandingsTable.StandingsLists[0];
+    if (sl) standings = { title: "Championnat pilotes", col: "Pilote", unit: "pts", rows: sl.DriverStandings.slice(0, 10).map(x => ({ rank: +x.position, name: `${x.Driver.givenName[0]}. ${x.Driver.familyName}`, val: x.points, me: false })) };
+  } catch {}
+  return { next, last, standings };
+}
+
 // Codes équipes ESPN -> Basketball Reference
 const BR = { ATL: "ATL", BOS: "BOS", BKN: "BRK", CHA: "CHO", CHI: "CHI", CLE: "CLE", DAL: "DAL", DEN: "DEN", DET: "DET", GS: "GSW", HOU: "HOU", IND: "IND", LAC: "LAC", LAL: "LAL", MEM: "MEM", MIA: "MIA", MIL: "MIL", MIN: "MIN", NO: "NOP", NY: "NYK", OKC: "OKC", ORL: "ORL", PHI: "PHI", PHX: "PHO", POR: "POR", SAC: "SAC", SA: "SAS", TOR: "TOR", UTAH: "UTA", WSH: "WAS" };
 const usDate = d => new Date(d).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, "");
@@ -195,29 +259,57 @@ async function boxAvailable(url) {
 }
 function trimRows(rows) { const top = rows.slice(0, 8); const me = rows.find(r => r.me); return me && !top.includes(me) ? [...top, me] : top; }
 
-const dataStatus = {};
-for (const t of teams) {
-  if (!t.data) continue;
-  try { teamData[t.key] = await ({ espn, mlb, sofascore })[t.data.type](t); dataStatus[t.key] = "ok"; }
-  catch (e) { dataStatus[t.key] = "erreur : " + e.message; }
-}
-
-// Articles déjà publiés (pour ne pas re-vérifier les box scores)
-let prev = [];
+// Version publiée précédente (articles + historique des matchs)
+let prevData = {};
 {
   const repo0 = process.env.GITHUB_REPOSITORY;
   if (process.env.PREV_URL || repo0) {
     const [owner, name] = (repo0 || "/").split("/");
     const url = process.env.PREV_URL || (name.toLowerCase() === `${owner.toLowerCase()}.github.io` ? `https://${owner}.github.io/data.json` : `https://${owner}.github.io/${name}/data.json`);
-    try { prev = (await get(url + "?t=" + now, { json: true })).articles || []; } catch {}
+    try { prevData = await get(url + "?t=" + now, { json: true }) || {}; } catch {}
   }
 }
+const prev = prevData.articles || [];
+
+// Historique : TheSportsDB (gratuit) ne donne que le dernier / prochain match -> on cumule d'un passage à l'autre
+function mergeHist(k, d) {
+  const p = (prevData.teamData || {})[k] || {};
+  const key = g => g.id || g.date;
+  const lastMap = new Map();
+  for (const g of [...(d.last || []), ...(p.last || [])]) if (!lastMap.has(key(g)) && now - Date.parse(g.date) < 60 * DAY) lastMap.set(key(g), g);
+  const last = [...lastMap.values()].sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 5);
+  const done = new Set(last.map(key));
+  const nextMap = new Map();
+  for (const g of [...(d.next || []), ...(p.next || [])]) if (!nextMap.has(key(g)) && !done.has(key(g)) && Date.parse(g.date) > now - 3 * 36e5) nextMap.set(key(g), g);
+  const next = [...nextMap.values()].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(0, 5);
+  return { ...d, last, next, standings: d.standings || p.standings || null };
+}
+
+const dataStatus = {};
+for (const t of teams) {
+  if (!t.data) continue;
+  try { teamData[t.key] = await ({ espn, mlb, sofascore, tsdb, f1 })[t.data.type](t); if (t.data.type === "tsdb") teamData[t.key] = mergeHist(t.key, teamData[t.key]); dataStatus[t.key] = "ok"; }
+  catch (e) { dataStatus[t.key] = "erreur : " + e.message; if (prevData.teamData?.[t.key]) teamData[t.key] = mergeHist(t.key, {}); }
+}
+
 const prevIds = new Set(prev.map(a => a.id));
 
 // Articles automatiques : résultats récents et matchs à venir
 const fmt = (d) => new Date(d).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", hour: "2-digit", minute: "2-digit" });
 for (const [k, d] of Object.entries(teamData)) {
   const t = teamByKey[k];
+  if (t.data?.type === "f1") {
+    for (const g of d.last || []) {
+      if (!g.top || now - Date.parse(g.date) > 4 * DAY) continue;
+      fresh.push({ id: `res-f1-${g.season}-${g.round}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title: `${g.label} : le classement de la course`, summary: g.top.map(x => `${x.pos}. ${x.name} (${x.team})${x.time ? " — " + x.time : ""}`).join(" · "), url: "https://motorsport.nextgen-auto.com/fr/formule-1/resultats/", urlLabel: "Résultats complets (Next Gen Auto)", publishedAt: new Date(Math.min(Date.parse(g.date) + 2.5 * 36e5, now)).toISOString() });
+    }
+    for (const g of d.next || []) {
+      const dt = Date.parse(g.date) - now;
+      if (dt < 0 || dt > 36 * 36e5 || !/Qualif|Sprint|Course/.test(g.comp)) continue;
+      fresh.push({ id: `pre-${g.id}`, team: k, sport: t.sport, cat: "avant-match", source: "Agenda", title: g.label, summary: `${fmt(g.date)} (heure de Paris).`, url: null, publishedAt: new Date(now).toISOString() });
+    }
+    continue;
+  }
   for (const g of d.last || []) {
     if (now - Date.parse(g.date) > 4 * DAY) continue;
     if (g.box?.check && !prevIds.has(`res-${k}-${g.date.slice(0, 10)}`) && !(await boxAvailable(g.box.url))) { console.log(` - box score pas encore dispo : ${g.box.url}`); continue; }
@@ -241,6 +333,7 @@ for (const a of fresh) { const old = byId.get(a.id); byId.set(a.id, old && a.cat
 const seenTitles = new Set();
 const articles = [...byId.values()]
   .filter(a => teams.some(t => t.key === a.team) || (!a.team && a.sport))
+  .filter(a => a.source === "Résultats" || a.source === "Agenda" || !excluded(a.title + " " + (a.summary || "")))
   .filter(a => now - Date.parse(a.publishedAt) <= KEEP_DAYS * DAY)
   .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
   .filter(a => { const k = norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60); if (seenTitles.has(k)) return false; seenTitles.add(k); return true; })
@@ -252,7 +345,8 @@ const out = {
   articles, teamData,
   sources: sourceStatus, dataStatus,
   repo: repo || null,
-  journal: cfg.journal || null
+  journal: cfg.journal || null,
+  exclure: cfg.exclure || []
 };
 await fs.mkdir(OUT.split("/").slice(0, -1).join("/") || ".", { recursive: true });
 await fs.writeFile(OUT, JSON.stringify(out));
