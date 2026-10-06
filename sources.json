@@ -58,8 +58,6 @@
       "feeds": ["https://trashtalk.co/equipe-nba/philadelphie-76ers/feed/", "https://trashtalk.co/feed/"], "filterIfFallback": true },
     { "name": "Basket USA", "logo": "basketusa", "scope": "sport:Basket", "keep": "all", "site": "https://www.basketusa.com/",
       "feeds": ["https://www.basketusa.com/feed/"] },
-    { "name": "Philadelphia Inquirer", "scope": "phi", "site": "https://www.inquirer.com/sixers/",
-      "feeds": ["https://www.inquirer.com/arc/outboundfeeds/rss/category/sixers/?outputType=xml"] },
     { "name": "Le Phocéen", "scope": "om", "site": "https://www.lephoceen.fr/",
       "feeds": ["https://www.lephoceen.fr/rss.xml", "https://news.google.com/rss/search?q=site:lephoceen.fr+when:7d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "L'Équipe · OM", "logo": "lequipe", "scope": "om", "filter": true, "site": "https://www.lequipe.fr/Football/Marseille/",
