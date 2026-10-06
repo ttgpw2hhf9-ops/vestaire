@@ -120,6 +120,9 @@ for (const src of cfg.sources) {
   if (!items) { sourceStatus.push({ ...pub(src), status: "erreur", error: err }); continue; }
   // Flux Google Actualités (secours quand un site bloque GitHub) : titres « Titre - Site », pas de résumé utile
   if (/news\.google\./.test(used)) items = items.map(it => ({ ...it, title: it.title.replace(/\s+[-–]\s+[^-–]+$/, ""), desc: "", image: null }));
+  // Flux Bing Actualités (2e secours) : liens parfois enveloppés, dates peu fiables -> on date à la 1re apparition
+  const viaBing = /bing\.com\/news/.test(used);
+  if (viaBing) items = items.map(it => { let link = it.link; try { const u = new URL(link); if (/bing\.com$/.test(u.hostname) && u.searchParams.get("url")) link = u.searchParams.get("url"); } catch {} return { ...it, link, _first: true }; });
   let kept = 0;
   for (const it of items) {
     if (src.urlMatch && !/news\.google\./.test(used) && !it.link.includes(src.urlMatch)) continue;
@@ -141,10 +144,10 @@ for (const src of cfg.sources) {
     // Date dans le futur (ex. TrashTalk publie avec une heure en avance) : ramenée à l'heure de récupération
     const date = it.date && !isNaN(Date.parse(it.date)) && Date.parse(it.date) <= Date.now() ? new Date(it.date).toISOString() : new Date().toISOString();
     if (now - Date.parse(date) > KEEP_DAYS * DAY) continue;
-    fresh.push({ id: sha(it.link), team, sport, cat: category(it.title, it.desc), source: src.name, title: it.title, summary: it.desc.slice(0, 320) + (it.desc.length > 320 ? "…" : ""), url: it.link, image: it.image, publishedAt: date });
+    fresh.push({ id: sha(it.link), team, sport, cat: category(it.title, it.desc), source: src.name, title: it.title, summary: it.desc.slice(0, 320) + (it.desc.length > 320 ? "…" : ""), url: it.link, image: it.image, publishedAt: date, ...(it._first ? { firstSeen: true } : {}) });
     kept++;
   }
-  sourceStatus.push({ ...pub(src), status: "ok", count: kept, feed: used, via: /news\.google\./.test(used) ? "Google Actualités" : null });
+  sourceStatus.push({ ...pub(src), status: "ok", count: kept, feed: used, via: /news\.google\./.test(used) ? "Google Actualités" : viaBing ? "Bing Actualités" : null });
 }
 function pub(s) { return { name: s.name, scope: s.scope, keep: s.keep || null, site: s.site, chip: !!s.chip, logo: s.logo || null }; }
 
@@ -433,7 +436,13 @@ const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
 for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a : { ...a, cat: category(a.title) });
-for (const a of fresh) { const old = byId.get(a.id); byId.set(a.id, old ? { ...a, publishedAt: old.publishedAt } : a); }
+const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));
+for (const f of fresh) {
+  const { firstSeen, ...a } = f, old = byId.get(a.id);
+  if (old) { byId.set(a.id, { ...a, publishedAt: old.publishedAt }); continue; }
+  if (firstSeen) { if (prevTitles.has(norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60))) continue; a.publishedAt = new Date().toISOString(); }
+  byId.set(a.id, a);
+}
 for (const [k, a] of byId) if (Date.parse(a.publishedAt) > Date.now() && a.source !== "Agenda") byId.set(k, { ...a, publishedAt: new Date().toISOString() });
 const seenTitles = new Set();
 const articles = [...byId.values()]
