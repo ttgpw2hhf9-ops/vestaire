@@ -62,7 +62,7 @@ a.spoil{text-decoration:none}
 .brand{display:flex;align-items:center;gap:10px;min-width:0;white-space:nowrap}
 .brand img{width:34px;height:34px;border-radius:9px;flex:none}
 .brand span{overflow:hidden;text-overflow:ellipsis}
-.spoil .lbl{display:none}.spoil{padding:0;width:38px;justify-content:center}
+.spoil .lbl{display:none}.spoil{padding:0;width:48px;min-height:48px;border-radius:24px;justify-content:center}.spoil svg{width:24px;height:24px}.appbar{gap:12px}
 @media (max-width:360px){.brand{font-size:20px}.brand img{width:30px;height:30px}}
 .appbar{gap:8px}
 .spoil .cnt{font-family:var(--f-mono);font-size:10px;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--accent);color:var(--accent-ink);text-align:center}
@@ -249,7 +249,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
   <header class="top">
     <div class="appbar">
       <div class="brand"><img src="icon-192.png?v=2" alt=""><span>Le Vestiaire</span></div>
-      <a class="spoil" id="journal" target="_blank" rel="noopener" hidden></a><button class="spoil" id="allread" data-allread="1"></button><button class="spoil" id="reload" aria-label="Actualiser"></button>
+      <a class="spoil" id="journal" target="_blank" rel="noopener" hidden></a><button class="spoil" id="allread" data-allread="1"></button>
     </div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
   </header>
@@ -400,12 +400,11 @@ function statusHtml(){
 }
 function renderTop(){
   const toMark=visibleUnread().length;
-  $("allread").title="Tout marquer comme lu";$("reload").title="Actualiser";$("journal").title="Journal L'Équipe";
+  $("allread").title="Tout marquer comme lu";$("journal").title="Journal L'Équipe";
   const J=$("journal");if(D.journal&&D.journal.url){J.href=D.journal.url;J.hidden=false;J.setAttribute("aria-label","Ouvrir le "+(D.journal.label||"journal").toLowerCase());J.innerHTML=`${I.news}<span class="lbl">${esc(D.journal.label||"Journal")}</span>`}else J.hidden=true;
   $("allread").disabled=!toMark;
   $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
   $("allread").innerHTML=`${I.checkAll}<span class="lbl">Tout lu</span>`;
-  $("reload").innerHTML=`<span class="${loading?"spin":""}">${I.sync}</span><span class="lbl">Actualiser</span>`;
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(sp.length&&!sp.includes(ui.sport)){ui.sport=sp[0];ui.team="all";saveUi()}
