@@ -59,7 +59,7 @@
       "feeds": ["https://www.lephoceen.fr/rss.xml", "https://news.google.com/rss/search?q=site:lephoceen.fr+when:7d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "L'Équipe · OM", "logo": "lequipe", "scope": "om", "filter": true, "site": "https://www.lequipe.fr/Football/Marseille/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Football/"] },
-    { "name": "L'Équipe · Rugby", "logo": "lequipe", "scope": "sport:Rugby", "keep": "all", "chip": true, "site": "https://www.lequipe.fr/Rugby/",
+    { "name": "L'Équipe · Rugby", "logo": "lequipe", "scope": "sport:Rugby", "keep": "all", "site": "https://www.lequipe.fr/Rugby/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Rugby/"] },
     { "name": "Passion MLB", "scope": "sport:Baseball", "keep": "all", "chip": true, "site": "https://passionmlb.com/",
       "feeds": ["https://passionmlb.com/feed/"] },
@@ -69,7 +69,7 @@
       "feeds": ["https://www.inquirer.com/arc/outboundfeeds/rss/category/phillies/?outputType=xml"] },
     { "name": "L'Équipe · F1", "logo": "lequipe", "scope": "sport:F1", "keep": "all", "site": "https://www.lequipe.fr/Formule-1/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Formule-1/", "https://news.google.com/rss/search?q=site:lequipe.fr/Formule-1+when:2d&hl=fr&gl=FR&ceid=FR:fr"] },
-    { "name": "Next Gen Auto", "scope": "sport:F1", "keep": "all", "chip": true, "urlMatch": "/formule-1/", "site": "https://motorsport.nextgen-auto.com/fr/formule-1/",
+    { "name": "Next Gen Auto", "logo": "next-gen-auto", "scope": "sport:F1", "keep": "all", "urlMatch": "/formule-1/", "site": "https://motorsport.nextgen-auto.com/fr/formule-1/",
       "feeds": ["https://motorsport.nextgen-auto.com/fr/rss/", "https://motorsport.nextgen-auto.com/fr/rss.xml", "https://news.google.com/rss/search?q=site:nextgen-auto.com+formule+1+when:2d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "L'Équipe · Cyclisme", "logo": "lequipe", "scope": "sport:Cyclisme", "keep": "all", "site": "https://www.lequipe.fr/Cyclisme-sur-route/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Cyclisme-sur-route/", "https://news.google.com/rss/search?q=site:lequipe.fr/Cyclisme-sur-route+when:2d&hl=fr&gl=FR&ceid=FR:fr"] }
