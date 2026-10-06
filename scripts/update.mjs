@@ -68,11 +68,16 @@ function matches(team, text) {
     return new RegExp(`(^|[^a-z0-9])${norm(k).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`).test(norm(text));
   });
 }
-export function category(title, desc) {
-  const t = norm(title + " " + desc.slice(0, 200));
-  if (/mercato|transfert|recrue|signe |signature|prolong|contrat|rumeur|trade|free agent|agent libre|echange|arbitrage salarial|offre/.test(t)) return "transfert";
-  if (/\b\d{1,3}\s?[-–]\s?\d{1,3}\b/.test(title) || /s'impose|victoire|defaite|battu|bat |l'emporte|chute|corrige|renverse|beats|defeat|win over|loss to|recap|resume du match/.test(t)) return "resultat";
-  if (/avant[- ]match|preview|programme|compo|groupe pour|face a .* ce soir|a quelle heure|ou regarder|probables/.test(t)) return "avant-match";
+// Catégorie devinée sur le TITRE seulement (le résumé donnait trop de faux positifs : « combat », « s'offre »…)
+const W = s => new RegExp(`(^|[^a-z])(${s})([^a-z]|$)`);
+const RE_MERC = W("mercato|transferts?|recrues?|recrute|recrutement|s'engage|signe (a|au|chez|pour|jusqu|un contrat|avec)|prolonge|prolongation|contrat|rumeurs?|trade|echange avec|free agent|agent libre|arbitrage salarial|pret|prete|joker medical|libere|quitte|depart (de|du) .* vers|arrive (a|au|chez)");
+const RE_RES = W("s'impose|s'offre|victoire|defaite|battu|battus|bat|battent|l'emporte|corrige|renverse|domine|chute (face|contre|a|devant)|beats|defeat|win over|loss to|recap|resume du match|qualifie|elimine|sacre|remporte|vainqueur");
+const RE_PRE = W("avant[- ]match|preview|programme|compo|compos|composition|groupe pour|ce soir|a quelle heure|ou regarder|probables|en direct|live");
+export function category(title) {
+  const t = norm(title);
+  if (/(^|[^0-9])\d{1,3}\s?[-–]\s?\d{1,3}([^0-9]|$)/.test(title) || RE_RES.test(t)) return "resultat";
+  if (RE_MERC.test(t)) return "transfert";
+  if (RE_PRE.test(t)) return "avant-match";
   return "news";
 }
 const sha = s => crypto.createHash("sha1").update(s).digest("hex").slice(0, 16);
@@ -356,7 +361,7 @@ for (const [k, d] of Object.entries(teamData)) {
 const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
-for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a);
+for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a : { ...a, cat: category(a.title) });
 for (const a of fresh) { const old = byId.get(a.id); byId.set(a.id, old && a.cat !== "avant-match" ? { ...a, publishedAt: old.publishedAt } : a); }
 const seenTitles = new Set();
 const articles = [...byId.values()]
