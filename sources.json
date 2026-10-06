@@ -47,7 +47,7 @@
       "feeds": ["https://www.lephoceen.fr/rss.xml", "https://news.google.com/rss/search?q=site:lephoceen.fr+when:7d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "L'Équipe · OM", "scope": "om", "filter": true, "site": "https://www.lequipe.fr/Football/Marseille/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Football/"] },
-    { "name": "L'Équipe · Rugby", "scope": "sport:Rugby", "keep": "mine", "site": "https://www.lequipe.fr/Rugby/",
+    { "name": "L'Équipe · Rugby", "scope": "sport:Rugby", "keep": "all", "chip": true, "site": "https://www.lequipe.fr/Rugby/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Rugby/"] },
     { "name": "Passion MLB", "scope": "sport:Baseball", "keep": "all", "chip": true, "site": "https://passionmlb.com/",
       "feeds": ["https://passionmlb.com/feed/"] },
