@@ -238,9 +238,13 @@ const TEAMS=()=>Object.fromEntries(D.teams.map(t=>[t.key,t]));
 function sports(){const s=new Set([...D.teams.map(t=>t.sport),...D.sources.filter(x=>x.scope.startsWith("sport:")).map(x=>x.scope.slice(6))]);return [...SPORT_ORDER.filter(x=>s.has(x)),...[...s].filter(x=>!SPORT_ORDER.includes(x)).sort()]}
 const sportAll=s=>"Tout le "+s.toLowerCase();
 const teamsOf=sp=>D.teams.filter(t=>sp==="all"||t.sport===sp).map(t=>t.key);
-const scopeKeys=()=>ui.team!=="all"?[ui.team]:teamsOf(ui.sport);
+const isSrc=()=>ui.team.startsWith("src:");
+const isTeamSel=()=>ui.team!=="all"&&!isSrc();
+const scopeKeys=()=>isTeamSel()?[ui.team]:teamsOf(ui.sport);
+// Sites affichés comme une pastille (ex. Passion MLB) : "chip": true dans sources.json
+const chipSources=sp=>{const seen=new Set();return D.sources.filter(x=>x.chip&&x.status!=="pause"&&(sp==="all"||x.scope==="sport:"+sp||(TEAMS()[x.scope]&&TEAMS()[x.scope].sport===sp))).filter(x=>!seen.has(x.name)&&seen.add(x.name))};
 const sportOf=a=>{const t=TEAMS()[a.team];return t?t.sport:a.sport};
-function inScope(a){if(!a.team||!TEAMS()[a.team])return ui.team==="all"&&(ui.sport==="all"||ui.sport===a.sport);return scopeKeys().includes(a.team)}
+function inScope(a){if(isSrc())return a.source===ui.team.slice(4)&&(ui.sport==="all"||sportOf(a)===ui.sport);if(!a.team||!TEAMS()[a.team])return ui.team==="all"&&(ui.sport==="all"||ui.sport===a.sport);return scopeKeys().includes(a.team)}
 const isRead=id=>P.read.includes(id),isSaved=id=>P.saved.includes(id);
 const allArts=()=>{const ids=new Set(D.articles.map(a=>a.id));return [...D.articles,...P.saved.filter(i=>!ids.has(i)&&P.savedItems[i]).map(i=>P.savedItems[i])]};
 const findArt=id=>allArts().find(a=>a.id===id);
@@ -280,10 +284,10 @@ function renderTop(){
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(ui.sport!=="all"&&loaded&&!sp.includes(ui.sport)){ui.sport="all";ui.team="all"}
-  if(ui.team!=="all"&&loaded&&!TEAMS()[ui.team])ui.team="all";
+  if(loaded&&isTeamSel()&&!TEAMS()[ui.team])ui.team="all";if(loaded&&isSrc()&&!chipSources(ui.sport).some(x=>"src:"+x.name===ui.team))ui.team="all";
   $("sports").innerHTML=[["all","Tout"],...sp.map(s=>[s,s])].map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
-  $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("");
+  $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}"><span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["src","Sources"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
@@ -324,9 +328,9 @@ function teamCard(k){
    ${st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>Équipe</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
 }
 function renderTeams(){
-  const T=TEAMS(),sp=ui.team!=="all"?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
-  let h=`<div class="pad"><h2 class="h2">${ui.team!=="all"?esc(T[ui.team].name):"Mes équipes"}</h2>`;
-  for(const s of sp){const keys=scopeKeys().filter(k=>T[k].sport===s);if(!keys.length)continue;if(ui.team==="all")h+=`<div class="sec">${esc(s)}</div>`;h+=keys.map(teamCard).join("")}
+  const T=TEAMS(),sp=isTeamSel()?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
+  let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Mes équipes"}</h2>`;
+  for(const s of sp){const keys=scopeKeys().filter(k=>T[k].sport===s);if(!keys.length)continue;if(!isTeamSel())h+=`<div class="sec">${esc(s)}</div>`;h+=keys.map(teamCard).join("")}
   return h+`<p class="hint">Pour ajouter une équipe ou un logo, voir l'onglet Sources › Modifier.</p></div>`;
 }
 function editUrl(path){if(!D.repo)return null;return `https://github.com/${D.repo}/edit/main/${path}`}
@@ -334,11 +338,11 @@ function renderSources(){
   const T=TEAMS(),sp=ui.sport==="all"?sports():[ui.sport];
   let h=`<div class="pad"><h2 class="h2">Sources</h2><p class="lead">Mise à jour automatique toutes les 30 min, de 6h à minuit environ. Les articles s'ouvrent sur le site d'origine.</p>`;
   for(const s of sp){
-    const scopes=["sport:"+s,...teamsOf(s)].filter(sc=>ui.team==="all"||sc===ui.team);
+    const scopes=["sport:"+s,...teamsOf(s)].filter(sc=>!isTeamSel()||sc===ui.team);
     const blocks=scopes.map(sc=>{const list=D.sources.filter(x=>x.scope===sc);if(!list.length)return "";
       const label=sc.startsWith("sport:")?`${aCrest({sport:s})}<span><span class="t">Sites généralistes</span><br><span class="comp">Rangés sous l'équipe concernée</span></span>`:`${crest(sc)}<span class="t">${esc(T[sc]?.name||sc)}</span>`;
       return `<div class="card"><div class="head" style="margin-bottom:6px">${label}</div>`+list.map(x=>`<div class="src-row"><div class="src-main"><b>${esc(x.name)}</b>${x.keep?` <span class="tag lang">${x.keep==="all"?"toutes les news":"mes équipes"}</span>`:""}<div class="comp">${esc((x.site||"").replace(/^https?:\/\/(www\.)?/,""))}</div>
-        <div class="hint" style="color:${x.status==="ok"?"var(--win)":x.status==="pause"?"var(--muted)":"var(--loss)"}">${x.status==="ok"?`OK · ${x.count} article${x.count>1?"s":""} au dernier passage`:x.status==="pause"?"En pause":"Erreur : "+esc(x.error||"inconnue")}</div></div></div>`).join("")+`</div>`}).join("");
+        <div class="hint" style="color:${x.status==="ok"?"var(--win)":x.status==="pause"?"var(--muted)":"var(--loss)"}">${x.status==="ok"?`OK · ${x.count} article${x.count>1?"s":""} au dernier passage${x.via?" (via "+esc(x.via)+")":""}`:x.status==="pause"?"En pause":"Erreur : "+esc(x.error||"inconnue")}</div></div></div>`).join("")+`</div>`}).join("");
     if(blocks)h+=`<div class="sec">${esc(s)}</div>`+blocks;
   }
   const ds=Object.entries(D.dataStatus||{});

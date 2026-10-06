@@ -95,6 +95,8 @@ for (const src of cfg.sources) {
     catch (e) { err = err || e.message; }
   }
   if (!items) { sourceStatus.push({ ...pub(src), status: "erreur", error: err }); continue; }
+  // Flux Google Actualités (secours quand un site bloque GitHub) : titres « Titre - Site », pas de résumé utile
+  if (/news\.google\./.test(used)) items = items.map(it => ({ ...it, title: it.title.replace(/\s+[-–]\s+[^-–]+$/, ""), desc: "", image: null }));
   let kept = 0;
   for (const it of items) {
     const text = it.title + " " + it.desc;
@@ -113,9 +115,9 @@ for (const src of cfg.sources) {
     fresh.push({ id: sha(it.link), team, sport, cat: category(it.title, it.desc), source: src.name, title: it.title, summary: it.desc.slice(0, 320) + (it.desc.length > 320 ? "…" : ""), url: it.link, image: it.image, publishedAt: date });
     kept++;
   }
-  sourceStatus.push({ ...pub(src), status: "ok", count: kept, feed: used });
+  sourceStatus.push({ ...pub(src), status: "ok", count: kept, feed: used, via: /news\.google\./.test(used) ? "Google Actualités" : null });
 }
-function pub(s) { return { name: s.name, scope: s.scope, keep: s.keep || null, site: s.site }; }
+function pub(s) { return { name: s.name, scope: s.scope, keep: s.keep || null, site: s.site, chip: !!s.chip }; }
 
 // ---------- matchs ----------
 const teamData = {};
