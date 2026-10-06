@@ -57,7 +57,7 @@
       "feeds": ["https://www.bebasket.fr/rss", "https://news.google.com/rss/search?q=site:bebasket.fr+nanterre+when:7d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "TrashTalk", "scope": "phi", "site": "https://trashtalk.co/equipe-nba/philadelphie-76ers/",
       "feeds": ["https://trashtalk.co/equipe-nba/philadelphie-76ers/feed/", "https://trashtalk.co/feed/"], "filterIfFallback": true },
-    { "name": "Basket USA", "scope": "sport:Basket", "keep": "all", "site": "https://www.basketusa.com/",
+    { "name": "Basket USA", "logo": "basketusa", "scope": "sport:Basket", "keep": "all", "site": "https://www.basketusa.com/",
       "feeds": ["https://www.basketusa.com/feed/"] },
     { "name": "Philadelphia Inquirer", "scope": "phi", "site": "https://www.inquirer.com/sixers/",
       "feeds": ["https://www.inquirer.com/arc/outboundfeeds/rss/category/sixers/?outputType=xml"] },
