@@ -91,6 +91,14 @@ const sha = s => crypto.createHash("sha1").update(s).digest("hex").slice(0, 16);
 // Mots à exclure (sources.json > "exclure") : l'article est ignoré si son titre ou son résumé contient l'un d'eux
 const EXCL = (cfg.exclure || []).map(w => new RegExp(`(^|[^a-z0-9])${norm(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`));
 const excluded = text => EXCL.some(re => re.test(norm(text)));
+// Titre exploitable ? (écarte les pages de commentaires sans vrai titre, ex. « 8 » ou « - Le Phoceen » via Google Actualités)
+function goodTitle(title, srcName) {
+  const t = norm(String(title || "")).replace(/^[\s\-–—|:]+|[\s\-–—|:]+$/g, "");
+  const letters = (t.match(/[a-z]/g) || []).length, words = t.split(/\s+/).filter(w => /[a-z]/.test(w)).length;
+  if (letters < 4 || words < 2) return false;
+  if (srcName && t === norm(srcName)) return false;
+  return true;
+}
 
 // ---------- articles ----------
 const teams = cfg.teams;
@@ -115,6 +123,8 @@ for (const src of cfg.sources) {
   let kept = 0;
   for (const it of items) {
     if (src.urlMatch && !/news\.google\./.test(used) && !it.link.includes(src.urlMatch)) continue;
+    it.title = it.title.replace(/^\s*[-–—|]\s*/, "").trim();
+    if (!goodTitle(it.title, src.name)) continue;
     const text = it.title + " " + it.desc;
     if (excluded(text)) continue;
     let team = null, sport = null;
@@ -374,7 +384,7 @@ for (const a of fresh) { const old = byId.get(a.id); byId.set(a.id, old ? { ...a
 const seenTitles = new Set();
 const articles = [...byId.values()]
   .filter(a => teams.some(t => t.key === a.team) || (!a.team && a.sport))
-  .filter(a => a.source === "Résultats" || a.source === "Agenda" || !excluded(a.title + " " + (a.summary || "")))
+  .filter(a => a.source === "Résultats" || a.source === "Agenda" || (goodTitle(a.title, a.source) && !excluded(a.title + " " + (a.summary || ""))))
   .filter(a => now - Date.parse(a.publishedAt) <= KEEP_DAYS * DAY)
   .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
   .filter(a => { const k = norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60); if (seenTitles.has(k)) return false; seenTitles.add(k); return true; })
