@@ -32,8 +32,6 @@
       "feeds": ["https://www.basketusa.com/feed/"] },
     { "name": "Philadelphia Inquirer", "scope": "phi", "site": "https://www.inquirer.com/sixers/",
       "feeds": ["https://www.inquirer.com/arc/outboundfeeds/rss/category/sixers/?outputType=xml"] },
-    { "name": "Liberty Ballers", "scope": "phi", "site": "https://www.libertyballers.com/",
-      "feeds": ["https://www.libertyballers.com/rss/current.xml"] },
     { "name": "Le Phocéen", "scope": "om", "site": "https://www.lephoceen.fr/",
       "feeds": ["https://www.lephoceen.fr/rss.xml", "https://www.lephoceen.fr/rss", "https://www.lephoceen.fr/feed"] },
     { "name": "L'Équipe · OM", "scope": "om", "filter": true, "site": "https://www.lequipe.fr/Football/Marseille/",

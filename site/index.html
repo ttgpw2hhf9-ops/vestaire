@@ -206,7 +206,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
   <header class="top">
     <div class="appbar">
       <div class="brand">Vestiaire</div>
-      <button class="spoil" id="reload" aria-label="Actualiser"></button>
+      <button class="spoil" id="spoil" data-spoil="1"></button>
     </div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
   </header>
@@ -283,7 +283,7 @@ function renderTop(){
   if(ui.team!=="all"&&loaded&&!TEAMS()[ui.team])ui.team="all";
   $("sports").innerHTML=[["all","Tout"],...sp.map(s=>[s,s])].map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
-  $("teams").innerHTML=`<button class="team allbtn" data-team="all" aria-pressed="${ui.team==="all"}">${ui.sport==="all"?"Toutes mes équipes":esc(sportAll(ui.sport))}</button>`+teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("");
+  $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["src","Sources"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
@@ -370,7 +370,7 @@ document.addEventListener("click",e=>{
   if(b.id==="reload"){load();return}
   if(d.view){ui.view=d.view;ui.open=null;$("screen").scrollTop=0;saveUi()}
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
-  else if(d.team){ui.team=d.team;saveUi();$("screen").scrollTop=0}
+  else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
   else if(d.cat){ui.cat=d.cat}
   else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
   else if(d.close){ui.open=null}

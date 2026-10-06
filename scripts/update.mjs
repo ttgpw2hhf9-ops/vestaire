@@ -212,7 +212,8 @@ if (process.env.PREV_URL || repo) {
   try { prev = (await get(url + "?t=" + now, { json: true })).articles || []; } catch {}
 }
 const byId = new Map();
-for (const a of prev) byId.set(a.id, a);
+const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
+for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a);
 for (const a of fresh) { const old = byId.get(a.id); byId.set(a.id, old && a.cat !== "avant-match" ? { ...a, publishedAt: old.publishedAt } : a); }
 const seenTitles = new Set();
 const articles = [...byId.values()]
