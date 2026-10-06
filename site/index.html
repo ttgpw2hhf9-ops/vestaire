@@ -192,7 +192,7 @@ tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 .crest.logo{background:#fff;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
-.crest.logo img{width:86%;height:86%;object-fit:contain;display:block}
+.crest.logo img{width:100%;height:100%;object-fit:contain;display:block}
 .inline-form{display:flex;flex-direction:column;gap:2px}
 .check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--fg);margin:4px 0 10px}
 .check input{width:20px;height:20px}
@@ -265,7 +265,10 @@ function crest(key,cls=""){const t=TEAMS()[key];
   const fb=t?`<span class="crest ${cls}" style="--c1:${esc(t.c1)};--c2:${esc(t.c2)}" aria-hidden="true">${esc(t.short)}</span>`:`<span class="crest ${cls}" style="--c1:#55657d;--c2:#8796ad" aria-hidden="true">★</span>`;
   if(!t)return fb;
   return `<span class="crest logo ${cls}" data-fb="${esc(key)}" aria-hidden="true" hidden><img src="logos/${esc(key)}.png" alt="" onload="this.parentNode.hidden=false;this.parentNode.nextElementSibling.remove()" onerror="this.parentNode.remove()"></span>${fb}`}
-function aCrest(a,cls=""){if(a.team&&TEAMS()[a.team])return crest(a.team,cls);const b=BADGE[a.sport]||[(a.sport||"★").slice(0,3).toUpperCase(),"#55657d","#8796ad"];return `<span class="crest ${cls}" style="--c1:${b[1]};--c2:${b[2]}" aria-hidden="true">${esc(b[0])}</span>`}
+const srcSlug=n=>"src-"+n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+// Logo d'un site (logos/src-<nom>.png), sinon pastille en lettres
+function srcCrest(name,fb,cls=""){return `<span class="crest logo ${cls}" aria-hidden="true" hidden><img src="logos/${srcSlug(name)}.png" alt="" onload="this.parentNode.hidden=false;this.parentNode.nextElementSibling.remove()" onerror="this.parentNode.remove()"></span>${fb}`}
+function aCrest(a,cls=""){if(a.team&&TEAMS()[a.team])return crest(a.team,cls);const b=BADGE[a.sport]||[(a.sport||"★").slice(0,3).toUpperCase(),"#55657d","#8796ad"];const fb=`<span class="crest ${cls}" style="--c1:${b[1]};--c2:${b[2]}" aria-hidden="true">${esc(b[0])}</span>`;return D.sources.some(x=>x.chip&&x.name===a.source)?srcCrest(a.source,fb,cls):fb}
 const aColor=a=>{const t=TEAMS()[a.team];return t?t.c1:(BADGE[a.sport]||[0,"#55657d"])[1]};
 
 const I={
@@ -302,7 +305,7 @@ function renderTop(){
   if(loaded&&isTeamSel()&&!TEAMS()[ui.team])ui.team="all";if(loaded&&isSrc()&&!chipSources(ui.sport).some(x=>"src:"+x.name===ui.team))ui.team="all";
   $("sports").innerHTML=[["all","Tout"],...sp.map(s=>[s,s])].map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
-  $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}"><span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>${esc(x.name)}</button>`).join("");
+  $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["src","Sources"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
