@@ -224,9 +224,40 @@ const GP = { Australian: "GP d'Australie", Chinese: "GP de Chine", Japanese: "GP
 const gpName = r => { const k = r.raceName.replace(/ Grand Prix$/, ""); return GP[k] || "GP " + k; };
 const F1S = [["FirstPractice", "Essais libres 1"], ["SecondPractice", "Essais libres 2"], ["ThirdPractice", "Essais libres 3"], ["SprintQualifying", "Qualifs sprint"], ["Sprint", "Sprint"], ["Qualifying", "Qualifications"]];
 const at = s => iso(`${s.date}T${s.time || "12:00:00Z"}`);
-async function f1() {
-  const J = "https://api.jolpi.ca/ergast/f1/";
+const J = "https://api.jolpi.ca/ergast/f1/";
+let F1C = null; // calendrier + classement pilotes, chargés une seule fois par passage
+async function f1Base() {
+  if (F1C) return F1C;
   const races = (await get(J + "current.json", { json: true })).MRData.RaceTable.Races || [];
+  let ds = [];
+  try { ds = (await get(J + "current/driverStandings.json", { json: true })).MRData.StandingsTable.StandingsLists[0]?.DriverStandings || []; } catch {}
+  return (F1C = { races, ds });
+}
+const dName = d => `${d.givenName[0]}. ${d.familyName}`;
+function f1Standings(ds, me) {
+  if (!ds.length) return null;
+  const mine = [].concat(me || []);
+  const rows = ds.map(x => ({ rank: +x.position, name: dName(x.Driver), val: x.points, me: mine.includes(x.Driver.driverId) }));
+  const top = rows.slice(0, 10);
+  return { title: "Championnat pilotes", col: "Pilote", unit: "pts", rows: [...top, ...rows.filter(r => r.me && !top.includes(r))] };
+}
+// Pilote suivi (ex. hadjar, piastri) : ses derniers résultats, la prochaine course, sa place au championnat
+async function f1driver(t) {
+  const { races, ds } = await f1Base();
+  const id = t.data.driverId;
+  const res = (await get(`${J}current/drivers/${id}/results.json?limit=100`, { json: true })).MRData.RaceTable.Races || [];
+  const last = res.map(r => {
+    const x = r.Results[0], pos = +x.position, fin = /^\d+$/.test(x.positionText);
+    return { id: `f1-${r.season}-${r.round}-Race-${id}`, date: at(r), label: gpName(r), opp: gpName(r), home: true, comp: "Course",
+      score: fin ? `${pos}e · ${x.points} pt${+x.points > 1 ? "s" : ""}` : `Abandon (${x.status})`, result: fin && pos <= 3 ? "W" : fin && +x.points > 0 ? "D" : "L" };
+  }).sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 5);
+  const nr = races.find(r => Date.parse(at(r)) > now - 2 * 36e5);
+  const next = nr ? [{ id: `f1-${nr.season}-${nr.round}-Race`, date: at(nr), label: `${gpName(nr)} · Course`, opp: gpName(nr), home: true, comp: "Course" }] : [];
+  const mine = ds.find(x => x.Driver.driverId === id);
+  return { next, last, standings: null, sub: mine ? `${mine.Constructors?.[0]?.name || ""} · ${mine.position}e du championnat (${mine.points} pts)` : null };
+}
+async function f1() {
+  const { races, ds } = await f1Base();
   const sess = [];
   for (const r of races) {
     const name = gpName(r);
@@ -239,15 +270,11 @@ async function f1() {
     const lr = (await get(J + "current/last/results.json", { json: true })).MRData.RaceTable.Races[0];
     if (lr) {
       const top = (lr.Results || []).slice(0, 10).map(x => ({ pos: x.position, name: `${x.Driver.givenName[0]}. ${x.Driver.familyName}`, team: x.Constructor?.name || "", time: x.Time?.time || x.status || "", pts: x.points }));
-      last = [{ id: `f1-${lr.season}-${lr.round}-Race`, date: at(lr), label: gpName(lr), opp: gpName(lr), home: true, comp: "Course", score: top.slice(0, 3).map(x => `${x.pos}. ${x.name}`).join(" · "), top, season: lr.season, round: lr.round }];
+      const fav = teams.filter(tt => tt.data?.type === "f1driver").map(tt => { const x = (lr.Results || []).find(r => r.Driver.driverId === tt.data.driverId); return x ? `${tt.label} ${/^\d+$/.test(x.positionText) ? x.position + "e" : "abandon"}` : null; }).filter(Boolean);
+      last = [{ id: `f1-${lr.season}-${lr.round}-Race`, date: at(lr), label: gpName(lr), opp: gpName(lr), home: true, comp: "Course", score: top.slice(0, 3).map(x => `${x.pos}. ${x.name}`).join(" · "), top, fav, season: lr.season, round: lr.round }];
     }
   } catch {}
-  let standings = null;
-  try {
-    const sl = (await get(J + "current/driverStandings.json", { json: true })).MRData.StandingsTable.StandingsLists[0];
-    if (sl) standings = { title: "Championnat pilotes", col: "Pilote", unit: "pts", rows: sl.DriverStandings.slice(0, 10).map(x => ({ rank: +x.position, name: `${x.Driver.givenName[0]}. ${x.Driver.familyName}`, val: x.points, me: false })) };
-  } catch {}
-  return { next, last, standings };
+  return { next, last, standings: f1Standings(ds, teams.filter(tt => tt.data?.type === "f1driver").map(tt => tt.data.driverId)) };
 }
 
 // Codes équipes ESPN -> Basketball Reference
@@ -288,7 +315,7 @@ function mergeHist(k, d) {
 const dataStatus = {};
 for (const t of teams) {
   if (!t.data) continue;
-  try { teamData[t.key] = await ({ espn, mlb, sofascore, tsdb, f1 })[t.data.type](t); if (t.data.type === "tsdb") teamData[t.key] = mergeHist(t.key, teamData[t.key]); dataStatus[t.key] = "ok"; }
+  try { teamData[t.key] = await ({ espn, mlb, sofascore, tsdb, f1, f1driver })[t.data.type](t); if (t.data.type === "tsdb") teamData[t.key] = mergeHist(t.key, teamData[t.key]); dataStatus[t.key] = "ok"; }
   catch (e) { dataStatus[t.key] = "erreur : " + e.message; if (prevData.teamData?.[t.key]) teamData[t.key] = mergeHist(t.key, {}); }
 }
 
@@ -298,10 +325,11 @@ const prevIds = new Set(prev.map(a => a.id));
 const fmt = (d) => new Date(d).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", hour: "2-digit", minute: "2-digit" });
 for (const [k, d] of Object.entries(teamData)) {
   const t = teamByKey[k];
+  if (t.data?.type === "f1driver") continue; // la fiche course est publiée une fois, sous « Formule 1 »
   if (t.data?.type === "f1") {
     for (const g of d.last || []) {
       if (!g.top || now - Date.parse(g.date) > 4 * DAY) continue;
-      fresh.push({ id: `res-f1-${g.season}-${g.round}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title: `${g.label} : le classement de la course`, summary: g.top.map(x => `${x.pos}. ${x.name} (${x.team})${x.time ? " — " + x.time : ""}`).join(" · "), url: "https://motorsport.nextgen-auto.com/fr/formule-1/resultats/", urlLabel: "Résultats complets (Next Gen Auto)", publishedAt: new Date(Math.min(Date.parse(g.date) + 2.5 * 36e5, now)).toISOString() });
+      fresh.push({ id: `res-f1-${g.season}-${g.round}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title: `${g.label} : le classement de la course`, summary: (g.fav?.length ? "Tes pilotes : " + g.fav.join(" · ") + ". — " : "") + g.top.map(x => `${x.pos}. ${x.name} (${x.team})${x.time ? " — " + x.time : ""}`).join(" · "), url: "https://motorsport.nextgen-auto.com/fr/formule-1/resultats/", urlLabel: "Résultats complets (Next Gen Auto)", publishedAt: new Date(Math.min(Date.parse(g.date) + 2.5 * 36e5, now)).toISOString() });
     }
     for (const g of d.next || []) {
       const dt = Date.parse(g.date) - now;
