@@ -421,7 +421,7 @@ function renderTeams(){
 function editUrl(path){if(!D.repo)return null;return `https://github.com/${D.repo}/edit/main/${path}`}
 function renderSources(){
   const T=TEAMS(),sp=ui.sport==="all"?sports():[ui.sport];
-  let h=`<div class="pad"><h2 class="h2">Sources</h2><p class="lead">Mise à jour automatique toutes les 15 min, de 6h à minuit environ. Les articles s'ouvrent sur le site d'origine.</p>`;
+  let h=`<div class="pad"><h2 class="h2">Sources</h2><p class="lead">Mise à jour automatique toutes les 30 min, de 6h à minuit environ. Les articles s'ouvrent sur le site d'origine.</p>`;
   for(const s of sp){
     const scopes=["sport:"+s,...teamsOf(s)].filter(sc=>!isTeamSel()||sc===ui.team);
     const blocks=scopes.map(sc=>{const list=D.sources.filter(x=>x.scope===sc);if(!list.length)return "";
