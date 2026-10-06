@@ -218,6 +218,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .tgl[aria-checked="true"]{background:var(--accent)}
 .tgl[aria-checked="true"] span{left:23px}
 .tgl[disabled]{opacity:.5}
+.team.all{padding:0 18px;font-weight:600}
 .team.gen .crest svg{width:16px;height:16px}
 .screen{overflow-x:hidden}
 .kv dd,.kv dt{min-width:0;overflow-wrap:anywhere}
@@ -411,7 +412,7 @@ function renderTop(){
   if(loaded&&isTeamSel()&&!TEAMS()[ui.team])ui.team="all";if(loaded&&isSrc()&&!chipSources(ui.sport).some(x=>"src:"+x.name===ui.team))ui.team="all";if(loaded&&isGen())ui.team="all";
   $("sports").innerHTML=sp.map(s=>[s,s]).map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${P.hide&&P.hide["sport:"+k]?`<span class="eye" title="Scores cachés">${I.eye}</span>`:""}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
-  $("teams").innerHTML=teamsOf(ui.sport).filter(k=>T[k].chip!==false).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
+  $("teams").innerHTML=`<button class="team all" data-team="all" aria-pressed="${ui.team==="all"}">Tout</button>`+teamsOf(ui.sport).filter(k=>T[k].chip!==false).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["src","Sources"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
@@ -421,7 +422,7 @@ function row(a){const m=isMasked(a),t=TEAMS()[a.team];return `<button class="msg
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
   const list=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat));
-  const h=statusHtml()+`<div class="cats" role="group" aria-label="Catégorie"><button class="chip" data-cat="all" aria-pressed="${ui.cat==="all"}">Tout</button>`+Object.entries(CATS).map(([k,l])=>`<button class="chip" data-cat="${k}" aria-pressed="${ui.cat===k}">${l}</button>`).join("")+`</div>`;
+  ui.cat="all";const h=statusHtml();
   if(!loaded)return h+`<p class="empty">${loadErr?"":"Chargement…"}</p>`;
   if(!list.length)return h+`<p class="empty">Rien dans cette sélection pour l'instant.</p>`;
   return h+grouped(list);
