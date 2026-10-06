@@ -5,7 +5,7 @@
   "teams": [
     { "key": "nan", "name": "Nanterre 92", "label": "Nanterre", "short": "NAN", "sport": "Basket", "comp": "Betclic Élite · BCL", "c1": "#0d7a4f", "c2": "#e9e9e9",
       "keywords": ["nanterre"],
-      "data": { "type": "tsdb", "id": 135245, "leagues": [4423, 4548], "lnb": "Nanterre" } },
+      "data": { "type": "tsdb", "id": 135245, "leagues": [4423, 4548], "table": 4423, "tableName": "Nanterre" } },
     { "key": "phi", "name": "Philadelphia 76ers", "label": "76ers", "short": "PHI", "sport": "Basket", "comp": "NBA", "c1": "#006bb6", "c2": "#ed174c",
       "keywords": ["76ers", "sixers", "philadelphie", "philadelphia 76", "embiid", "maxey"],
       "data": { "type": "espn", "sport": "basketball/nba", "team": "phi" } },

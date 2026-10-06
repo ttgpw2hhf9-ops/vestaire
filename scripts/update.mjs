@@ -245,23 +245,39 @@ async function tsdb(t) {
       last.push({ ...g, score: `${a}-${b}`, result: a > b ? "W" : a < b ? "L" : "D" });
     } else if (Date.parse(g.date) > now - 3 * 36e5) next.push(g);
   }
-  let standings = null;
-  if (t.data.lnb) try { standings = await lnbStandings(t.data.lnb); } catch {}
-  return { next, last, standings };
+  let standings = null, tableCache;
+  if (t.data.table) try { const lt = await leagueTable(t); standings = lt.standings; tableCache = lt.cache; } catch {}
+  return { next, last, standings, tableCache };
 }
-// Classement Betclic Élite : API du site officiel LNB (jeton anonyme, le même que pour tout visiteur du site)
+// Classement Betclic Élite recalculé à partir des résultats journée par journée (TheSportsDB, gratuit).
+// Les journées terminées sont gardées dans data.json : seules les journées en cours / nouvelles sont relues.
 const seasonYear = () => { const d = new Date(now); return d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; };
-async function lnbStandings(name) {
-  const tok = (await get("https://lnb.fr/api/token", { json: true })).token;
-  const H = { "User-Agent": UA, "Accept": "application/json", "Content-Type": "application/json", "Authorization": tok, "language_code": "fr" };
-  const y = seasonYear();
-  const c = await (await fetch(`https://api-prod.lnb.fr/competition/getStandingCompetitions?division_external_id=1&year=${y}&is_final_show=true`, { headers: H })).json();
-  const comp = (c.data || []).find(x => x.competition_abbrev === "PROA") || (c.data || [])[0];
-  if (!comp) return null;
-  const r = await fetch("https://api-prod.lnb.fr/altrstats/getStandingByCompetition", { method: "POST", headers: H, body: JSON.stringify({ competition_external_id: comp.external_id, competition_filter_name: comp.competition_filter_value || "GENERAL", round_numbers: "" }) });
-  if (!r.ok) throw new Error("LNB " + r.status);
-  const rows = ((await r.json()).data?.[0]?.data || []).map(x => ({ rank: x.rank, name: x.team?.team_name || "?", val: `${x.s_wins}-${x.s_losses}`, me: norm(x.team?.team_name || "").includes(norm(name)) }));
-  return rows.length ? { title: "Betclic Élite", unit: "V-D", rows: trimRows(rows) } : null;
+const SHORT = { "Chorale Roanne Basket": "Roanne", "Boulazac Basket Dordogne": "Boulazac", "Gravelines-Dunkerque": "Gravelines", "Le Mans Sarthe Basket": "Le Mans", "Saint-Quentin Basket-Ball": "Saint-Quentin", "Élan Béarnais": "Pau", "SLUC Nancy Basket": "Nancy", "Paris Basketball": "Paris", "Élan Chalon": "Chalon", "Lyon-Villeurbanne": "ASVEL", "JL Bourg": "Bourg-en-Bresse", "Strasbourg IG": "Strasbourg" };
+async function leagueTable(t) {
+  const lg = t.data.table, season = `${seasonYear()}-${seasonYear() + 1}`;
+  const old = (prevData.teamData || {})[t.key]?.tableCache;
+  const cache = old && old.season === season ? old : { season, rounds: {} };
+  for (let r = 1, fetched = 0; r <= 50 && fetched < 40; r++) {
+    if (cache.rounds[r]?.done) continue;
+    let evs = [];
+    try { evs = (await tsGet(`eventsround.php?id=${lg}&r=${r}&s=${season}`)).events || []; fetched++; } catch { break; }
+    const games = evs.map(e => [e.strHomeTeam, e.strAwayTeam, e.intHomeScore, e.intAwayScore]);
+    const played = games.filter(g => g[2] != null && g[2] !== "" && g[3] != null && g[3] !== "");
+    if (!evs.length || !played.length) { delete cache.rounds[r]; break; }
+    cache.rounds[r] = { done: played.length === games.length, games: played };
+  }
+  const tab = new Map();
+  const row = n => { if (!tab.has(n)) tab.set(n, { name: SHORT[n] || n, w: 0, l: 0, pf: 0, pa: 0 }); return tab.get(n); };
+  for (const rd of Object.values(cache.rounds)) for (const [h, a, hs, as] of rd.games) {
+    const H = row(h), A = row(a), x = +hs, y = +as;
+    H.pf += x; H.pa += y; A.pf += y; A.pa += x;
+    if (x > y) { H.w++; A.l++; } else { A.w++; H.l++; }
+  }
+  const me = norm(t.data.tableName || t.name);
+  const rows = [...tab.values()].sort((p, q) => q.w - p.w || p.l - q.l || (q.pf - q.pa) - (p.pf - p.pa))
+    .map((x, i) => ({ rank: i + 1, name: x.name, val: `${x.w}-${x.l}`, me: norm(x.name).includes(me) }));
+  const nr = Object.keys(cache.rounds).length;
+  return { cache, standings: rows.length ? { title: `Betclic Élite · après ${nr} journée${nr > 1 ? "s" : ""}`, unit: "V-D", rows: trimRows(rows) } : null };
 }
 // EuroLeague : API officielle (classement de la dernière journée commencée)
 async function euroleague(t) {
@@ -368,7 +384,7 @@ function mergeHist(k, d) {
   const nextMap = new Map();
   for (const g of [...(d.next || []), ...(p.next || [])]) if (!nextMap.has(key(g)) && !done.has(key(g)) && Date.parse(g.date) > now - 3 * 36e5) nextMap.set(key(g), g);
   const next = [...nextMap.values()].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(0, 5);
-  return { ...d, last, next, standings: d.standings || p.standings || null };
+  return { ...d, last, next, standings: d.standings || p.standings || null, tableCache: d.tableCache || p.tableCache };
 }
 
 const dataStatus = {};
