@@ -150,10 +150,16 @@ function pub(s) { return { name: s.name, scope: s.scope, keep: s.keep || null, s
 // ---------- matchs ----------
 const teamData = {};
 const iso = d => new Date(d).toISOString();
+const CUPS = { "uefa.champions": "Ligue des champions", "uefa.europa": "Ligue Europa", "uefa.europa.conf": "Ligue Conférence", "fra.coupe_de_france": "Coupe de France", "eng.fa": "FA Cup", "eng.league_cup": "Carabao Cup", "sui.cup": "Coupe de Suisse" };
 async function espn(t) {
   const base = `https://site.api.espn.com/apis/site/v2/sports/${t.data.sport}/teams/${t.data.team}/schedule`;
   const evs = [];
   for (const u of [base, base + "?fixture=true", base + "?seasontype=2"]) { try { const j = await get(u, { json: true }); evs.push(...(j.events || [])); } catch {} }
+  // Coupes (européennes et nationales) : même équipe, autre compétition ESPN
+  for (const cup of t.data.cups || []) {
+    const cb = `https://site.api.espn.com/apis/site/v2/sports/soccer/${cup}/teams/${t.data.team}/schedule`;
+    for (const u of [cb, cb + "?fixture=true"]) { try { const j = await get(u, { json: true }); evs.push(...(j.events || []).map(e => ({ ...e, _cup: CUPS[cup] || j.events?.[0]?.league?.name || cup }))); } catch {} }
+  }
   const seen = new Set(), next = [], last = [];
   for (const e of evs) {
     if (seen.has(e.id)) continue; seen.add(e.id);
@@ -161,7 +167,7 @@ async function espn(t) {
     const me = c.competitors.find(x => String(x.team?.id) === String(t.data.team) || x.team?.abbreviation?.toLowerCase() === String(t.data.team).toLowerCase());
     const op = c.competitors.find(x => x !== me); if (!me || !op) continue;
     const sc = x => x.score?.displayValue ?? x.score?.value ?? x.score;
-    const g = { date: iso(e.date), opp: op.team.shortDisplayName || op.team.displayName, home: me.homeAway === "home", comp: e.seasonType?.name && !/regular/i.test(e.seasonType.name) ? e.seasonType.name : (t.comp || "") };
+    const g = { date: iso(e.date), opp: op.team.shortDisplayName || op.team.displayName, home: me.homeAway === "home", comp: e._cup || (e.seasonType?.name && !/regular/i.test(e.seasonType.name) ? e.seasonType.name : (t.comp || "")) };
     if (t.data.sport === "basketball/nba") {
       const homeAbbr = (me.homeAway === "home" ? me : op).team?.abbreviation;
       const pre = /pre/i.test(e.seasonType?.name || "") || e.season?.type === 1;
@@ -239,7 +245,37 @@ async function tsdb(t) {
       last.push({ ...g, score: `${a}-${b}`, result: a > b ? "W" : a < b ? "L" : "D" });
     } else if (Date.parse(g.date) > now - 3 * 36e5) next.push(g);
   }
-  return { next, last, standings: null };
+  let standings = null;
+  if (t.data.lnb) try { standings = await lnbStandings(t.data.lnb); } catch {}
+  return { next, last, standings };
+}
+// Classement Betclic Élite : API du site officiel LNB (jeton anonyme, le même que pour tout visiteur du site)
+const seasonYear = () => { const d = new Date(now); return d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; };
+async function lnbStandings(name) {
+  const tok = (await get("https://lnb.fr/api/token", { json: true })).token;
+  const H = { "User-Agent": UA, "Accept": "application/json", "Content-Type": "application/json", "Authorization": tok, "language_code": "fr" };
+  const y = seasonYear();
+  const c = await (await fetch(`https://api-prod.lnb.fr/competition/getStandingCompetitions?division_external_id=1&year=${y}&is_final_show=true`, { headers: H })).json();
+  const comp = (c.data || []).find(x => x.competition_abbrev === "PROA") || (c.data || [])[0];
+  if (!comp) return null;
+  const r = await fetch("https://api-prod.lnb.fr/altrstats/getStandingByCompetition", { method: "POST", headers: H, body: JSON.stringify({ competition_external_id: comp.external_id, competition_filter_name: comp.competition_filter_value || "GENERAL", round_numbers: "" }) });
+  if (!r.ok) throw new Error("LNB " + r.status);
+  const rows = ((await r.json()).data?.[0]?.data || []).map(x => ({ rank: x.rank, name: x.team?.team_name || "?", val: `${x.s_wins}-${x.s_losses}`, me: norm(x.team?.team_name || "").includes(norm(name)) }));
+  return rows.length ? { title: "Betclic Élite", unit: "V-D", rows: trimRows(rows) } : null;
+}
+// EuroLeague : API officielle (classement de la dernière journée commencée)
+async function euroleague(t) {
+  const E = `https://api-live.euroleague.net`, sc = `E${seasonYear()}`;
+  const rounds = ((await get(`${E}/v2/competitions/E/seasons/${sc}/rounds`, { json: true })).data || [])
+    .filter(r => Date.parse(r.minGameStartDate) <= now).sort((a, b) => b.round - a.round);
+  for (const rd of rounds.slice(0, 3)) {
+    try {
+      const j = await get(`${E}/v3/competitions/E/seasons/${sc}/rounds/${rd.round}/basicstandings`, { json: true });
+      const rows = (j.teams || []).map(x => ({ rank: x.position, name: x.club?.editorialName || x.club?.abbreviatedName || x.club?.name, val: `${x.gamesWon}-${x.gamesLost}`, me: false }));
+      if (rows.length) return { next: [], last: [], standingsOnly: true, sub: `EuroLeague · après la journée ${rd.round}`, standings: { title: "Classement EuroLeague", unit: "V-D", rows } };
+    } catch {}
+  }
+  return { next: [], last: [], standingsOnly: true, standings: null };
 }
 
 // F1 : base Jolpica (ex-Ergast), gratuite
@@ -338,7 +374,7 @@ function mergeHist(k, d) {
 const dataStatus = {};
 for (const t of teams) {
   if (!t.data) continue;
-  try { teamData[t.key] = await ({ espn, mlb, sofascore, tsdb, f1, f1driver })[t.data.type](t); if (t.data.type === "tsdb") teamData[t.key] = mergeHist(t.key, teamData[t.key]); dataStatus[t.key] = "ok"; }
+  try { teamData[t.key] = await ({ espn, mlb, sofascore, tsdb, f1, f1driver, euroleague })[t.data.type](t); if (t.data.type === "tsdb") teamData[t.key] = mergeHist(t.key, teamData[t.key]); dataStatus[t.key] = "ok"; }
   catch (e) { dataStatus[t.key] = "erreur : " + e.message; if (prevData.teamData?.[t.key]) teamData[t.key] = mergeHist(t.key, {}); }
 }
 

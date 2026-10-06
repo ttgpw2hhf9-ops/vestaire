@@ -451,9 +451,10 @@ function teamCard(k){
   const lastLine=lg&&lg.label?`<dt>Dernier</dt><dd>${esc(lg.label)}<br><span class="comp">${esc(lg.score||"")}</span></dd>`:form.length?`<dt>Forme</dt><dd><span class="form">${form.map(x=>`<i class="${x}">${x==="W"?"V":x==="L"?"D":"N"}</i>`).join("")}</span></dd>`:"";
   const head=`<div class="card"><div class="head">${crest(k,"lg")}<div><div class="t">${esc(t.name)}</div><div class="meta">${esc(d.sub||t.comp||t.sport)}</div></div></div>`;
   if(!D.teamData[k])return head+`<p class="hint" style="margin:10px 0 0">Suivi des news (pas de calendrier ni de résultats pour l'instant).</p></div>`;
-  return head+`
+  return head+(d.standingsOnly?"":`
    <dl class="kv"><dt>Prochain</dt><dd>${nx?`${nx.label?esc(nx.label):(nx.home?"vs ":"@ ")+esc(nx.opp)}<br><span class="comp">${esc(dayLabel(nx.date))} · ${hm(nx.date)}${nx.comp&&!nx.label?" · "+esc(nx.comp):""}</span>`:`<span class="comp">pas encore connu</span>`}</dd>
-   ${hid&&(lastLine||st)?`<dt>Résultats</dt><dd><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Cachés · afficher</button></dd>`:lastLine}</dl>
+   ${hid&&(lastLine||st)?`<dt>Résultats</dt><dd><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Cachés · afficher</button></dd>`:lastLine}</dl>`)+`
+   ${d.standingsOnly&&hid&&st?`<p style="margin:10px 0 0"><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Classement caché · afficher</button></p>`:""}
    ${!hid&&st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
 }
 function renderTeams(){
