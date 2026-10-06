@@ -69,6 +69,8 @@
       "feeds": ["https://backend.liverpoolfc.com/lfc-rest-api/fr/news?categoryId=186&perPage=20"] },
     { "name": "L'Équipe · Liverpool", "logo": "lequipe", "scope": "liv", "filter": true, "site": "https://www.lequipe.fr/Football/Liverpool/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Football/Liverpool/", "https://dwh.lequipe.fr/api/edito/rss?path=/Football/"] },
+    { "name": "So Foot", "scope": "sport:Foot", "keep": "all", "site": "https://www.sofoot.com/",
+      "feeds": ["https://www.sofoot.com/rss.xml", "https://news.google.com/rss/search?q=site:sofoot.com+when:1d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "Lucarne Grenat", "scope": "srv", "filter": true, "exclude": ["hockey", "gshc", "geneve-servette", "geneve servette", "lions", "feminin", "feminine", "feminines", "sfccf", "chenois", "women", "dames", "axa women"], "site": "https://lucarne-grenat.ch/nos-articles/",
       "feeds": ["https://lucarne-grenat.ch/feed/"] },
     { "name": "L'Équipe · Rugby", "logo": "lequipe", "scope": "sport:Rugby", "keep": "all", "site": "https://www.lequipe.fr/Rugby/",
