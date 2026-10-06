@@ -138,7 +138,8 @@ for (const src of cfg.sources) {
       if (src.exclude && matches({ keywords: src.exclude }, text)) continue; // mots à écarter pour ce site (ex. hockey)
       team = t.key; sport = t.sport;
     }
-    const date = it.date && !isNaN(Date.parse(it.date)) ? it.date : new Date().toISOString();
+    // Date dans le futur (ex. TrashTalk publie avec une heure en avance) : ramenée à l'heure de récupération
+    const date = it.date && !isNaN(Date.parse(it.date)) && Date.parse(it.date) <= Date.now() ? new Date(it.date).toISOString() : new Date().toISOString();
     if (now - Date.parse(date) > KEEP_DAYS * DAY) continue;
     fresh.push({ id: sha(it.link), team, sport, cat: category(it.title, it.desc), source: src.name, title: it.title, summary: it.desc.slice(0, 320) + (it.desc.length > 320 ? "…" : ""), url: it.link, image: it.image, publishedAt: date });
     kept++;
@@ -433,6 +434,7 @@ const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
 for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a : { ...a, cat: category(a.title) });
 for (const a of fresh) { const old = byId.get(a.id); byId.set(a.id, old ? { ...a, publishedAt: old.publishedAt } : a); }
+for (const [k, a] of byId) if (Date.parse(a.publishedAt) > Date.now() && a.source !== "Agenda") byId.set(k, { ...a, publishedAt: new Date().toISOString() });
 const seenTitles = new Set();
 const articles = [...byId.values()]
   .filter(a => teams.some(t => t.key === a.team) || (!a.team && a.sport))
