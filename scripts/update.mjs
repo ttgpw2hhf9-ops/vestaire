@@ -251,7 +251,8 @@ const out = {
   teams: teams.map(({ keywords, data, ...t }) => t),
   articles, teamData,
   sources: sourceStatus, dataStatus,
-  repo: repo || null
+  repo: repo || null,
+  journal: cfg.journal || null
 };
 await fs.mkdir(OUT.split("/").slice(0, -1).join("/") || ".", { recursive: true });
 await fs.writeFile(OUT, JSON.stringify(out));

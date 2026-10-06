@@ -56,11 +56,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .spoil[aria-pressed="true"]{background:rgba(255,255,255,.16)}
 .spoil svg{width:18px;height:18px}
 .spoil{white-space:nowrap;flex:none}
+a.spoil{text-decoration:none}
+.spoil[hidden]{display:none}
 .spoil[disabled]{opacity:.45;cursor:default}
 .brand{display:flex;align-items:center;gap:10px;min-width:0;white-space:nowrap}
 .brand img{width:34px;height:34px;border-radius:9px;flex:none}
 .brand span{overflow:hidden;text-overflow:ellipsis}
-@media (max-width:430px){.spoil .lbl{display:none}.spoil{padding:0;width:38px;justify-content:center}}
+.spoil .lbl{display:none}.spoil{padding:0;width:38px;justify-content:center}
 @media (max-width:360px){.brand{font-size:20px}.brand img{width:30px;height:30px}}
 .appbar{gap:8px}
 .spoil .cnt{font-family:var(--f-mono);font-size:10px;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--accent);color:var(--accent-ink);text-align:center}
@@ -219,7 +221,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
   <header class="top">
     <div class="appbar">
       <div class="brand"><img src="icon-192.png?v=2" alt=""><span>Le Vestiaire</span></div>
-      <button class="spoil" id="allread" data-allread="1"></button><button class="spoil" id="reload" aria-label="Actualiser"></button>
+      <a class="spoil" id="journal" target="_blank" rel="noopener" hidden></a><button class="spoil" id="allread" data-allread="1"></button><button class="spoil" id="reload" aria-label="Actualiser"></button>
     </div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
   </header>
@@ -282,6 +284,7 @@ function aCrest(a,cls=""){if(a.team&&TEAMS()[a.team])return crest(a.team,cls);co
 const aColor=a=>{const t=TEAMS()[a.team];return t?t.c1:(BADGE[a.sport]||[0,"#55657d"])[1]};
 
 const I={
+ news:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2h-1"/><path d="M7 9h7M7 12h7M7 15h4"/></svg>',
  inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z"/></svg>',
  saved:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
  bmkFill:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
@@ -307,6 +310,8 @@ function statusHtml(){
 }
 function renderTop(){
   const toMark=visibleUnread().length;
+  $("allread").title="Tout marquer comme lu";$("reload").title="Actualiser";$("journal").title="Journal L'Équipe";
+  const J=$("journal");if(D.journal&&D.journal.url){J.href=D.journal.url;J.hidden=false;J.setAttribute("aria-label","Ouvrir le "+(D.journal.label||"journal").toLowerCase());J.innerHTML=`${I.news}<span class="lbl">${esc(D.journal.label||"Journal")}</span>`}else J.hidden=true;
   $("allread").disabled=!toMark;
   $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
   $("allread").innerHTML=`${I.checkAll}<span class="lbl">Tout lu</span>`;
