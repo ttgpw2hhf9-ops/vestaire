@@ -122,7 +122,7 @@ for (const src of cfg.sources) {
   }
   sourceStatus.push({ ...pub(src), status: "ok", count: kept, feed: used, via: /news\.google\./.test(used) ? "Google Actualités" : null });
 }
-function pub(s) { return { name: s.name, scope: s.scope, keep: s.keep || null, site: s.site, chip: !!s.chip }; }
+function pub(s) { return { name: s.name, scope: s.scope, keep: s.keep || null, site: s.site, chip: !!s.chip, logo: s.logo || null }; }
 
 // ---------- matchs ----------
 const teamData = {};

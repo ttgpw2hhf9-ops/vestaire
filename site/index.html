@@ -291,10 +291,12 @@ function crest(key,cls=""){const t=TEAMS()[key];
   const fb=t?`<span class="crest ${cls}" style="--c1:${esc(t.c1)};--c2:${esc(t.c2)}" aria-hidden="true">${esc(t.short)}</span>`:`<span class="crest ${cls}" style="--c1:#55657d;--c2:#8796ad" aria-hidden="true">★</span>`;
   if(!t)return fb;
   return `<span class="crest logo ${cls}" data-fb="${esc(key)}" aria-hidden="true" hidden><img src="logos/${esc(key)}.png" alt="" onload="this.parentNode.hidden=false;this.parentNode.nextElementSibling.remove()" onerror="this.parentNode.remove()"></span>${fb}`}
-const srcSlug=n=>"src-"+n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+// Logo d'un site : "logo" dans sources.json (ex. "lequipe" -> logos/src-lequipe.png), sinon nom du site
+const srcSlug=n=>{const s=D.sources.find(x=>x.name===n&&x.logo);return s?"src-"+s.logo:srcSlug0(n)};
+const srcSlug0=n=>"src-"+n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 // Logo d'un site (logos/src-<nom>.png), sinon pastille en lettres
 function srcCrest(name,fb,cls=""){return `<span class="crest logo ${cls}" aria-hidden="true" hidden><img src="logos/${srcSlug(name)}.png" alt="" onload="this.parentNode.hidden=false;this.parentNode.nextElementSibling.remove()" onerror="this.parentNode.remove()"></span>${fb}`}
-function aCrest(a,cls=""){if(a.team&&TEAMS()[a.team])return crest(a.team,cls);const b=BADGE[a.sport]||[(a.sport||"★").slice(0,3).toUpperCase(),"#55657d","#8796ad"];const fb=`<span class="crest ${cls}" style="--c1:${b[1]};--c2:${b[2]}" aria-hidden="true">${esc(b[0])}</span>`;return D.sources.some(x=>x.chip&&x.name===a.source)?srcCrest(a.source,fb,cls):fb}
+function aCrest(a,cls=""){if(a.team&&TEAMS()[a.team])return crest(a.team,cls);const b=BADGE[a.sport]||[(a.sport||"★").slice(0,3).toUpperCase(),"#55657d","#8796ad"];const fb=`<span class="crest ${cls}" style="--c1:${b[1]};--c2:${b[2]}" aria-hidden="true">${esc(b[0])}</span>`;return D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source)?srcCrest(a.source,fb,cls):fb}
 const aColor=a=>{const t=TEAMS()[a.team];return t?t.c1:(BADGE[a.sport]||[0,"#55657d"])[1]};
 
 const I={
