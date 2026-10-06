@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#15233a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Vestiaire">
+<meta name="apple-mobile-web-app-title" content="Le Vestiaire">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png?v=2">
 <link rel="icon" href="icon-192.png?v=2">
-<title>Vestiaire</title>
+<title>Le Vestiaire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -57,7 +57,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .spoil svg{width:18px;height:18px}
 .spoil{white-space:nowrap;flex:none}
 .spoil[disabled]{opacity:.45;cursor:default}
-@media (max-width:380px){.brand{font-size:21px}.spoil{padding:0 9px}}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;white-space:nowrap}
+.brand img{width:34px;height:34px;border-radius:9px;flex:none}
+.brand span{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:430px){.spoil .lbl{display:none}.spoil{padding:0;width:38px;justify-content:center}}
+@media (max-width:360px){.brand{font-size:20px}.brand img{width:30px;height:30px}}
 .appbar{gap:8px}
 .spoil .cnt{font-family:var(--f-mono);font-size:10px;min-width:18px;padding:1px 5px;border-radius:9px;background:var(--accent);color:var(--accent-ink);text-align:center}
 
@@ -213,7 +217,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 <div class="app" id="app">
   <header class="top">
     <div class="appbar">
-      <div class="brand">Vestiaire</div>
+      <div class="brand"><img src="icon-192.png?v=2" alt=""><span>Le Vestiaire</span></div>
       <button class="spoil" id="allread" data-allread="1"></button><button class="spoil" id="reload" aria-label="Actualiser"></button>
     </div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
@@ -304,8 +308,8 @@ function renderTop(){
   const toMark=visibleUnread().length;
   $("allread").disabled=!toMark;
   $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
-  $("allread").innerHTML=`${I.checkAll}Tout lu`;
-  $("reload").innerHTML=`<span class="${loading?"spin":""}">${I.sync}</span>Actualiser`;
+  $("allread").innerHTML=`${I.checkAll}<span class="lbl">Tout lu</span>`;
+  $("reload").innerHTML=`<span class="${loading?"spin":""}">${I.sync}</span><span class="lbl">Actualiser</span>`;
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(ui.sport!=="all"&&loaded&&!sp.includes(ui.sport)){ui.sport="all";ui.team="all"}

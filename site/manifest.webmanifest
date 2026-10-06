@@ -1,6 +1,6 @@
 {
- "name": "Vestiaire",
- "short_name": "Vestiaire",
+ "name": "Le Vestiaire",
+ "short_name": "Le Vestiaire",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
