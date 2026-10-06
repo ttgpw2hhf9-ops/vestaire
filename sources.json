@@ -69,7 +69,7 @@
       "feeds": ["https://www.empireofthekop.com/feed/"] },
     { "name": "Rousing The Kop", "scope": "liv", "site": "https://www.rousingthekop.com/",
       "feeds": ["https://www.rousingthekop.com/feed/"] },
-    { "name": "Lucarne Grenat", "scope": "srv", "filter": true, "exclude": ["hockey", "gshc", "geneve-servette", "geneve servette", "lions"], "site": "https://lucarne-grenat.ch/nos-articles/",
+    { "name": "Lucarne Grenat", "scope": "srv", "filter": true, "exclude": ["hockey", "gshc", "geneve-servette", "geneve servette", "lions", "feminin", "feminine", "feminines", "sfccf", "chenois", "women", "dames", "axa women"], "site": "https://lucarne-grenat.ch/nos-articles/",
       "feeds": ["https://lucarne-grenat.ch/feed/"] },
     { "name": "L'Équipe · Rugby", "logo": "lequipe", "scope": "sport:Rugby", "keep": "all", "site": "https://www.lequipe.fr/Rugby/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Rugby/"] },

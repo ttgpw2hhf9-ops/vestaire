@@ -460,14 +460,14 @@ function renderTeams(){
   const T=TEAMS(),sp=isTeamSel()?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
   let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Mes équipes"}</h2>`;
   for(const s of sp){const keys=scopeKeys().filter(k=>T[k].sport===s);if(!keys.length)continue;if(!isTeamSel())h+=`<div class="sec">${esc(s)}</div>`;h+=keys.map(teamCard).join("")}
-  if(!isTeamSel())h=h.replace('<h2 class="h2">Mes équipes</h2>',`<h2 class="h2">Mes équipes</h2><div class="tools"><button class="btn sm" data-reorder="1">Modifier l'ordre</button><button class="btn sm" data-hidecfg="1">${I.eye} Scores cachés</button></div>`);
+  {const k=h.indexOf('</h2>')+5;h=h.slice(0,k)+`<div class="tools"><button class="btn sm" data-reorder="1">Modifier l'ordre</button><button class="btn sm" data-hidecfg="1">${I.eye} Scores cachés</button></div>`+h.slice(k)}
   if(ui.hidecfg){
     let r=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Scores cachés</h2><button class="btn sm primary" data-hidecfg="1">Terminé</button></div><p class="lead">Les résultats et les titres avec un score sont masqués jusqu'à ce que tu les touches. Gardé sur cet appareil.</p>`;
     for(const s of sports()){const sk="sport:"+s,on=!!P.hide[sk];r+=`<div class="sec">${esc(s)}</div><div class="card"><div class="src-row">${aCrest({sport:s})}<div class="src-main"><b>Tout le ${esc(s.toLowerCase())}</b><div class="hint">Toutes les news et équipes de ce sport</div></div><button class="tgl" role="switch" aria-checked="${on}" data-hide="${esc(sk)}" aria-label="Scores cachés : tout le ${esc(s)}"><span></span></button></div>`+
       teamsOf(s).map(k=>{const v=on||!!P.hide[k];return `<div class="src-row ${on?"off":""}">${crest(k)}<div class="src-main"><b>${esc(TEAMS()[k].name)}</b></div><button class="tgl" role="switch" aria-checked="${v}" data-hide="${esc(k)}" ${on?"disabled":""} aria-label="Scores cachés : ${esc(TEAMS()[k].name)}"><span></span></button></div>`}).join("")+`</div>`}
     return r+`</div>`;
   }
-  if(ui.reorder&&!isTeamSel()){
+  if(ui.reorder){
     let r=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Ordre des équipes</h2><button class="btn sm primary" data-reorder="1">Terminé</button></div><p class="lead">L'ordre des pastilles dans chaque sport. Gardé sur cet appareil.</p>`;
     for(const s of (ui.sport==="all"?sports():[ui.sport])){const keys=teamsOf(s);if(!keys.length)continue;r+=`<div class="sec">${esc(s)}</div><div class="card">`+keys.map((k,i)=>`<div class="src-row">${crest(k)}<div class="src-main"><b>${esc(TEAMS()[k].name)}</b></div><button class="icon-btn" data-move="${esc(k)}" data-dir="-1" aria-label="Monter ${esc(TEAMS()[k].name)}" ${i===0?"disabled":""}>${I.up}</button><button class="icon-btn" data-move="${esc(k)}" data-dir="1" aria-label="Descendre ${esc(TEAMS()[k].name)}" ${i===keys.length-1?"disabled":""}>${I.down}</button></div>`).join("")+`</div>`}
     return r+`</div>`;
@@ -491,6 +491,7 @@ function renderSources(){
   if((D.exclure||[]).length)h+=`<div class="sec">Mots exclus</div><div class="card"><p class="lead" style="margin:0">Les articles qui contiennent l'un de ces mots sont ignorés : ${D.exclure.map(w=>`<span class="tag lang">${esc(w)}</span>`).join(" ")}</p><p class="hint">Liste « exclure » dans sources.json.</p></div>`;
   h+=`<div class="sec">Synchronisation entre appareils</div><div class="card">`+(syncCfg?`<p class="lead" style="margin:0">Activée sur cet appareil : articles lus, « À lire », ordre des équipes et scores cachés sont partagés avec tes autres appareils.</p><p class="hint" style="color:${syncInfo.err?"var(--loss)":"var(--win)"}">${syncInfo.busy?"Synchronisation en cours…":syncInfo.err?"Erreur : "+esc(syncInfo.err):syncInfo.at?"Dernière synchro à "+hm(new Date(syncInfo.at).toISOString()):"En attente"}</p><div class="actions"><button class="btn" data-sync-now="1">Synchroniser maintenant</button><button class="btn" data-sync-off="1">Désactiver ici</button></div>`
     :`<p class="lead" style="margin:0">Pour retrouver tes articles lus et « À lire » sur tous tes appareils, colle ici ton jeton GitHub (droit « gist »). Il reste uniquement sur cet appareil.</p>${syncInfo.err?`<p class="hint" style="color:var(--loss)">Erreur : ${esc(syncInfo.err)}</p>`:""}<div class="actions"><input id="syncTok" type="password" autocomplete="off" placeholder="ghp_… ou github_pat_…" style="flex:1 1 100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:var(--panel);color:var(--fg);font:inherit"><button class="btn primary" data-sync-on="1" ${syncInfo.busy?"disabled":""}>${syncInfo.busy?"Activation…":"Activer"}</button></div>`)+`</div>`;
+  h+=`<div class="sec">Affichage</div><div class="card"><p class="lead" style="margin:0">Choisis l'ordre des équipes dans les pastilles, ou masque les scores.</p><div class="actions"><button class="btn" data-go-order="1">Ordre des équipes</button><button class="btn" data-go-hide="1">Scores cachés</button></div></div>`;
   const e=editUrl("sources.json");
   h+=`<div class="card"><h4>Modifier</h4><p class="lead">Les équipes et les sites se règlent dans le fichier <b>sources.json</b> sur GitHub. Les logos se déposent dans le dossier <b>site/logos</b> (nom : clé de l'équipe, ex. <b>nan.png</b>).</p>${e?`<a class="btn primary" href="${esc(e)}" target="_blank" rel="noopener">Modifier sources.json sur GitHub</a>`:""}</div></div>`;
   return h;
@@ -528,6 +529,8 @@ document.addEventListener("click",e=>{
   else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}
+  else if(d.goOrder){ui.view="teams";ui.team="all";ui.reorder=true;ui.hidecfg=false;saveUi();$("screen").scrollTop=0}
+  else if(d.goHide){ui.view="teams";ui.team="all";ui.hidecfg=true;ui.reorder=false;saveUi();$("screen").scrollTop=0}
   else if(d.reorder){ui.reorder=!ui.reorder;ui.hidecfg=false}
   else if(d.hidecfg){ui.hidecfg=!ui.hidecfg;ui.reorder=false}
   else if(d.hide){P.hide={...(P.hide||{}),[d.hide]:!P.hide?.[d.hide]};if(!P.hide[d.hide])delete P.hide[d.hide];saveP()}
