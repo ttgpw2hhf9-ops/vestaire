@@ -146,6 +146,7 @@ tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight
 .kbtn{min-height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
 .kbtn[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
 .icon-btn{flex:none;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--muted);border:1px solid var(--line)}
+.icon-btn[disabled]{opacity:.3}
 .icon-btn svg{width:18px;height:18px}
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;font-size:13px;color:var(--muted)}
 .refresh{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
@@ -233,7 +234,7 @@ const SPORT_ORDER=["Basket","Foot","Baseball"];
 const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
 const ui={view:"inbox",sport:"all",team:"all",cat:"all",open:null};
-let P={read:[],saved:[],savedItems:{}};
+let P={read:[],saved:[],savedItems:{},order:[]};
 const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 Object.assign(ui,LS("vh-ui")||{});ui.open=null;Object.assign(P,LS("vh-prefs")||{});
 const saveUi=()=>LS("vh-ui",{sport:ui.sport,team:ui.team,view:ui.view});
@@ -244,7 +245,11 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const TEAMS=()=>Object.fromEntries(D.teams.map(t=>[t.key,t]));
 function sports(){const s=new Set([...D.teams.map(t=>t.sport),...D.sources.filter(x=>x.scope.startsWith("sport:")).map(x=>x.scope.slice(6))]);return [...SPORT_ORDER.filter(x=>s.has(x)),...[...s].filter(x=>!SPORT_ORDER.includes(x)).sort()]}
 const sportAll=s=>"Tout le "+s.toLowerCase();
-const teamsOf=sp=>D.teams.filter(t=>sp==="all"||t.sport===sp).map(t=>t.key);
+// Ordre des équipes choisi par l'utilisateur (gardé sur l'appareil)
+const ordered=()=>{const o=P.order||[];return [...D.teams].sort((a,b)=>{const ia=o.indexOf(a.key),ib=o.indexOf(b.key);return (ia<0?999:ia)-(ib<0?999:ib)||D.teams.indexOf(a)-D.teams.indexOf(b)})};
+const teamsOf=sp=>ordered().filter(t=>sp==="all"||t.sport===sp).map(t=>t.key);
+function moveTeam(k,dir){const t=TEAMS()[k];const same=teamsOf(t.sport);const i=same.indexOf(k),j=i+dir;if(j<0||j>=same.length)return;
+  const all=ordered().map(x=>x.key);const a=all.indexOf(k),b=all.indexOf(same[j]);[all[a],all[b]]=[all[b],all[a]];P.order=all;saveP()}
 const isSrc=()=>ui.team.startsWith("src:");
 const isTeamSel=()=>ui.team!=="all"&&!isSrc();
 const scopeKeys=()=>isTeamSel()?[ui.team]:teamsOf(ui.sport);
@@ -281,6 +286,8 @@ const I={
  sync:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
  checkAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12.5l4 4L14 8M10 16.5l1 1L22 7"/></svg>',
+ up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',
+ down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',
  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>'
 };
 
@@ -349,6 +356,12 @@ function renderTeams(){
   const T=TEAMS(),sp=isTeamSel()?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
   let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Mes équipes"}</h2>`;
   for(const s of sp){const keys=scopeKeys().filter(k=>T[k].sport===s);if(!keys.length)continue;if(!isTeamSel())h+=`<div class="sec">${esc(s)}</div>`;h+=keys.map(teamCard).join("")}
+  if(!isTeamSel())h=h.replace('<h2 class="h2">Mes équipes</h2>',`<div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Mes équipes</h2><button class="btn sm" data-reorder="1">${ui.reorder?"Terminé":"Modifier l'ordre"}</button></div>`);
+  if(ui.reorder&&!isTeamSel()){
+    let r=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1">Ordre des équipes</h2><button class="btn sm primary" data-reorder="1">Terminé</button></div><p class="lead">L'ordre des pastilles dans chaque sport. Gardé sur cet appareil.</p>`;
+    for(const s of (ui.sport==="all"?sports():[ui.sport])){const keys=teamsOf(s);if(!keys.length)continue;r+=`<div class="sec">${esc(s)}</div><div class="card">`+keys.map((k,i)=>`<div class="src-row">${crest(k)}<div class="src-main"><b>${esc(TEAMS()[k].name)}</b></div><button class="icon-btn" data-move="${esc(k)}" data-dir="-1" aria-label="Monter ${esc(TEAMS()[k].name)}" ${i===0?"disabled":""}>${I.up}</button><button class="icon-btn" data-move="${esc(k)}" data-dir="1" aria-label="Descendre ${esc(TEAMS()[k].name)}" ${i===keys.length-1?"disabled":""}>${I.down}</button></div>`).join("")+`</div>`}
+    return r+`</div>`;
+  }
   return h+`<p class="hint">Pour ajouter une équipe ou un logo, voir l'onglet Sources › Modifier.</p></div>`;
 }
 function editUrl(path){if(!D.repo)return null;return `https://github.com/${D.repo}/edit/main/${path}`}
@@ -398,6 +411,8 @@ document.addEventListener("click",e=>{
   else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}
+  else if(d.reorder){ui.reorder=!ui.reorder}
+  else if(d.move){moveTeam(d.move,+d.dir)}
   else if(d.teamOpen){const t=TEAMS()[d.teamOpen];ui.open=null;ui.view="teams";ui.sport=t.sport;ui.team=d.teamOpen;saveUi()}
   else if(b.id==="toggleRead"){isRead(ui.open)?P.read=P.read.filter(x=>x!==ui.open):P.read.push(ui.open);saveP()}
   else return;
