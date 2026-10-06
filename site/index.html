@@ -181,6 +181,8 @@ tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight
 .status.run{color:var(--accent)}
 .status.err{color:var(--loss)}
 .status .lnk{color:var(--accent);text-decoration:underline;padding:0;font-size:12px}
+.status.ok{align-items:center}
+.status [data-allread]{margin-left:auto;white-space:nowrap;min-height:32px}
 .spin{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
@@ -273,11 +275,12 @@ const I={
  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>'
 };
 
-function statusHtml(){
+function statusHtml(nUnread){
+  const allRead=nUnread?` <button class="lnk" data-allread="1">Tout marquer comme lu (${nUnread})</button>`:"";
   if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span></div>`;
   if(!D.updatedAt)return "";
   const old=Date.now()-Date.parse(D.updatedAt)>3*36e5;
-  return `<div class="status ${old?"err":"ok"}">${old?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${old?" · la mise à jour automatique semble en pause":""}</span></div>`;
+  return `<div class="status ${old?"err":"ok"}">${old?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${old?" · la mise à jour automatique semble en pause":""}</span>${allRead}</div>`;
 }
 function renderTop(){
   $("reload").innerHTML=`<span class="${loading?"spin":""}">${I.sync}</span>Actualiser`;
@@ -297,7 +300,8 @@ function row(a){return `<button class="msg ${isRead(a.id)?"":"unread"}" data-msg
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
   const list=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat));
-  const h=statusHtml()+`<div class="cats" role="group" aria-label="Catégorie"><button class="chip" data-cat="all" aria-pressed="${ui.cat==="all"}">Tout</button>`+Object.entries(CATS).map(([k,l])=>`<button class="chip" data-cat="${k}" aria-pressed="${ui.cat===k}">${l}</button>`).join("")+`</div>`;
+  const unreadHere=list.filter(a=>!isRead(a.id)).length;
+  const h=statusHtml(unreadHere)+`<div class="cats" role="group" aria-label="Catégorie"><button class="chip" data-cat="all" aria-pressed="${ui.cat==="all"}">Tout</button>`+Object.entries(CATS).map(([k,l])=>`<button class="chip" data-cat="${k}" aria-pressed="${ui.cat===k}">${l}</button>`).join("")+`</div>`;
   if(!loaded)return h+`<p class="empty">${loadErr?"":"Chargement…"}</p>`;
   if(!list.length)return h+`<p class="empty">Rien dans cette sélection pour l'instant.</p>`;
   return h+grouped(list);
@@ -364,7 +368,7 @@ function renderSheet(){
    ${a.image?`<img src="${esc(a.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;border-radius:12px;margin:0 0 12px;max-height:240px;object-fit:cover" onerror="this.remove()">`:""}
    ${a.summary?`<div class="txt"><p>${esc(a.summary)}</p></div>`:""}
    ${a.fixture?fixtureCard(a.fixture):""}
-   ${a.url?`<div class="actions"><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener" style="flex-basis:100%">Lire l'article sur ${esc(a.source)}</a></div>`:""}
+   ${a.url?`<div class="actions"><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener" style="flex-basis:100%">${a.urlLabel?esc(a.urlLabel):"Lire l'article sur "+esc(a.source)}</a></div>`:""}
    <div class="actions"><button class="btn" id="toggleRead">${isRead(a.id)?"Marquer non lu":"Marquer lu"}</button>${t?`<button class="btn" data-team-open="${esc(a.team)}">Fiche ${esc(t.label||t.name)}</button>`:""}</div>`;
 }
 function render(){renderTop();const v=ui.view;$("screen").innerHTML=v==="saved"?renderSaved():v==="cal"?renderCal():v==="teams"?renderTeams():v==="src"?renderSources():renderInbox();renderSheet()}
@@ -376,6 +380,7 @@ document.addEventListener("click",e=>{
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
   else if(d.cat){ui.cat=d.cat}
+  else if(d.allread){D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat)).forEach(a=>{if(!isRead(a.id))P.read.push(a.id)});saveP()}
   else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}

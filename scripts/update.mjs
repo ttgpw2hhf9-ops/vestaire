@@ -134,6 +134,12 @@ async function espn(t) {
     const op = c.competitors.find(x => x !== me); if (!me || !op) continue;
     const sc = x => x.score?.displayValue ?? x.score?.value ?? x.score;
     const g = { date: iso(e.date), opp: op.team.shortDisplayName || op.team.displayName, home: me.homeAway === "home", comp: e.seasonType?.name && !/regular/i.test(e.seasonType.name) ? e.seasonType.name : (t.comp || "") };
+    if (t.data.sport === "basketball/nba") {
+      const homeAbbr = (me.homeAway === "home" ? me : op).team?.abbreviation;
+      const pre = /pre/i.test(e.seasonType?.name || "") || e.season?.type === 1;
+      g.box = pre || !BR[homeAbbr] ? { url: `https://www.espn.com/nba/boxscore/_/gameId/${e.id}`, label: "Box score (ESPN)" }
+        : { url: `https://www.basketball-reference.com/boxscores/${usDate(e.date)}0${BR[homeAbbr]}.html`, label: "Box score (Basketball Reference)", check: true };
+    } else if (t.data.sport.startsWith("soccer")) g.box = { url: `https://www.espn.com/soccer/match/_/gameId/${e.id}`, label: "Feuille de match (ESPN)" };
     if (c.status?.type?.completed) { const a = +sc(me), b = +sc(op); last.push({ ...g, score: `${a}-${b}`, result: a > b ? "W" : a < b ? "L" : "D" }); }
     else if (Date.parse(e.date) > now - 3 * 36e5) next.push(g);
   }
@@ -157,7 +163,7 @@ async function mlb(t) {
   const next = [], last = [];
   for (const day of j.dates || []) for (const g of day.games || []) {
     const home = g.teams.home.team.id === t.data.id, me = home ? g.teams.home : g.teams.away, op = home ? g.teams.away : g.teams.home;
-    const base = { date: g.gameDate, opp: op.team.teamName || op.team.name, home, comp: g.seriesDescription && g.gameType !== "R" ? g.seriesDescription : "MLB" };
+    const base = { date: g.gameDate, opp: op.team.teamName || op.team.name, home, comp: g.seriesDescription && g.gameType !== "R" ? g.seriesDescription : "MLB", box: { url: `https://www.mlb.com/gameday/${g.gamePk}/final/box`, label: "Box score (MLB.com)" } };
     if (g.status.abstractGameState === "Final" && me.score != null) last.push({ ...base, score: `${me.score}-${op.score}`, result: me.isWinner ? "W" : "L" });
     else if (g.status.abstractGameState !== "Final") next.push(base);
   }
@@ -179,6 +185,13 @@ async function sofascore(t) {
   });
   return { next, last, standings: null };
 }
+// Codes équipes ESPN -> Basketball Reference
+const BR = { ATL: "ATL", BOS: "BOS", BKN: "BRK", CHA: "CHO", CHI: "CHI", CLE: "CLE", DAL: "DAL", DEN: "DEN", DET: "DET", GS: "GSW", HOU: "HOU", IND: "IND", LAC: "LAC", LAL: "LAL", MEM: "MEM", MIA: "MIA", MIL: "MIL", MIN: "MIN", NO: "NOP", NY: "NYK", OKC: "OKC", ORL: "ORL", PHI: "PHI", PHX: "PHO", POR: "POR", SAC: "SAC", SA: "SAS", TOR: "TOR", UTAH: "UTA", WSH: "WAS" };
+const usDate = d => new Date(d).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, "");
+async function boxAvailable(url) {
+  try { const r = await fetch(url, { method: "GET", headers: { "User-Agent": UA }, redirect: "follow" }); return r.status === 404 ? false : true; }
+  catch { return true; } // site injoignable : on publie quand même le lien
+}
 function trimRows(rows) { const top = rows.slice(0, 8); const me = rows.find(r => r.me); return me && !top.includes(me) ? [...top, me] : top; }
 
 const dataStatus = {};
@@ -188,15 +201,28 @@ for (const t of teams) {
   catch (e) { dataStatus[t.key] = "erreur : " + e.message; }
 }
 
+// Articles déjà publiés (pour ne pas re-vérifier les box scores)
+let prev = [];
+{
+  const repo0 = process.env.GITHUB_REPOSITORY;
+  if (process.env.PREV_URL || repo0) {
+    const [owner, name] = (repo0 || "/").split("/");
+    const url = process.env.PREV_URL || (name.toLowerCase() === `${owner.toLowerCase()}.github.io` ? `https://${owner}.github.io/data.json` : `https://${owner}.github.io/${name}/data.json`);
+    try { prev = (await get(url + "?t=" + now, { json: true })).articles || []; } catch {}
+  }
+}
+const prevIds = new Set(prev.map(a => a.id));
+
 // Articles automatiques : résultats récents et matchs à venir
 const fmt = (d) => new Date(d).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", hour: "2-digit", minute: "2-digit" });
 for (const [k, d] of Object.entries(teamData)) {
   const t = teamByKey[k];
   for (const g of d.last || []) {
     if (now - Date.parse(g.date) > 4 * DAY) continue;
+    if (g.box?.check && !prevIds.has(`res-${k}-${g.date.slice(0, 10)}`) && !(await boxAvailable(g.box.url))) { console.log(` - box score pas encore dispo : ${g.box.url}`); continue; }
     const [a, b] = g.score.split("-");
     const title = g.home ? `${t.label} ${a}-${b} ${g.opp}` : `${g.opp} ${b}-${a} ${t.label}`;
-    fresh.push({ id: `res-${k}-${g.date.slice(0, 10)}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title, summary: `${g.result === "W" ? "Victoire" : g.result === "L" ? "Défaite" : "Match nul"} ${g.home ? "à domicile" : "à l'extérieur"}${g.comp ? " · " + g.comp : ""}.`, url: null, publishedAt: new Date(Math.min(Date.parse(g.date) + 3 * 36e5, now)).toISOString(), fixture: { home: g.home ? k : g.opp, away: g.home ? g.opp : k, score: g.home ? `${a} – ${b}` : `${b} – ${a}`, comp: g.comp, date: g.date } });
+    fresh.push({ id: `res-${k}-${g.date.slice(0, 10)}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title, summary: `${g.result === "W" ? "Victoire" : g.result === "L" ? "Défaite" : "Match nul"} ${g.home ? "à domicile" : "à l'extérieur"}${g.comp ? " · " + g.comp : ""}.`, url: g.box?.url || null, urlLabel: g.box?.label || null, publishedAt: new Date(Math.min(Date.parse(g.date) + 3 * 36e5, now)).toISOString(), fixture: { home: g.home ? k : g.opp, away: g.home ? g.opp : k, score: g.home ? `${a} – ${b}` : `${b} – ${a}`, comp: g.comp, date: g.date } });
   }
   for (const g of d.next || []) {
     const dt = Date.parse(g.date) - now;
@@ -206,13 +232,7 @@ for (const [k, d] of Object.entries(teamData)) {
 }
 
 // ---------- fusion avec la version précédente ----------
-let prev = [];
 const repo = process.env.GITHUB_REPOSITORY;
-if (process.env.PREV_URL || repo) {
-  const [owner, name] = (repo || "/").split("/");
-  const url = process.env.PREV_URL || (name.toLowerCase() === `${owner.toLowerCase()}.github.io` ? `https://${owner}.github.io/data.json` : `https://${owner}.github.io/${name}/data.json`);
-  try { prev = (await get(url + "?t=" + now, { json: true })).articles || []; } catch {}
-}
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
 for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a);
