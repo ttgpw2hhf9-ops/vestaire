@@ -53,6 +53,13 @@ export function parseFeed(xml) {
     return { title: stripHtml(tag(b, ["title"])), link: link.trim(), desc: stripHtml(rawDesc), date: date ? new Date(date).toISOString() : null, image: img || null };
   }).filter(i => i.title && /^https?:/.test(i.link));
 }
+// Sites sans RSS mais avec une API JSON d'articles (ex. site officiel de Liverpool : results[{title,url,publishedAt,coverImage}])
+function parseJsonNews(txt, src) {
+  let j; try { j = JSON.parse(txt); } catch { return null; }
+  const list = j.results || j.items || j.data || [];
+  return list.map(x => ({ title: decode(x.title || ""), link: new URL(x.url || x.link || "", src.base || src.site).href, desc: decode(x.kicker || x.summary || x.description || ""), date: x.publishedAt || x.date || null, image: x.coverImage?.sizes?.sm?.url || x.image || null }))
+    .filter(i => i.title && /^https?:/.test(i.link));
+}
 function discoverFeed(html, base) {
   const m = html.match(/<link[^>]+type=["']application\/(?:rss|atom)\+xml["'][^>]*>/i);
   if (!m) return null;
@@ -95,7 +102,7 @@ for (const src of cfg.sources) {
   if (src.on === false) { sourceStatus.push({ ...pub(src), status: "pause" }); continue; }
   let items = null, used = null, fellBack = false, err = "";
   for (const [i, url] of (src.feeds || []).entries()) {
-    try { const x = await get(url); items = parseFeed(x); if (items && items.length) { used = url; fellBack = i > 0; break; } items = null; err = err || "flux vide ou invalide"; }
+    try { const x = await get(url); items = src.json ? parseJsonNews(x, src) : parseFeed(x); if (items && items.length) { used = url; fellBack = i > 0; break; } items = null; err = err || "flux vide ou invalide"; }
     catch (e) { err = e.name === "AbortError" ? "délai dépassé" : e.message; }
   }
   if (!items && src.site) {
