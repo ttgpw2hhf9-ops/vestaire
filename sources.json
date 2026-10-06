@@ -45,6 +45,12 @@
     { "name": "Passion MLB", "scope": "sport:Baseball", "keep": "all", "chip": true, "site": "https://passionmlb.com/",
       "feeds": ["https://passionmlb.com/feed/"] },
     { "name": "Philadelphia Inquirer", "scope": "phs", "site": "https://www.inquirer.com/phillies/",
-      "feeds": ["https://www.inquirer.com/arc/outboundfeeds/rss/category/phillies/?outputType=xml"] }
+      "feeds": ["https://www.inquirer.com/arc/outboundfeeds/rss/category/phillies/?outputType=xml"] },
+    { "name": "L'Équipe · F1", "scope": "sport:F1", "keep": "all", "site": "https://www.lequipe.fr/Formule-1/",
+      "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Formule-1/", "https://news.google.com/rss/search?q=site:lequipe.fr/Formule-1+when:2d&hl=fr&gl=FR&ceid=FR:fr"] },
+    { "name": "Next Gen Auto", "scope": "sport:F1", "keep": "all", "chip": true, "urlMatch": "/formule-1/", "site": "https://motorsport.nextgen-auto.com/fr/formule-1/",
+      "feeds": ["https://motorsport.nextgen-auto.com/fr/rss/", "https://motorsport.nextgen-auto.com/fr/rss.xml", "https://news.google.com/rss/search?q=site:nextgen-auto.com+formule+1+when:2d&hl=fr&gl=FR&ceid=FR:fr"] },
+    { "name": "L'Équipe · Cyclisme", "scope": "sport:Cyclisme", "keep": "all", "site": "https://www.lequipe.fr/Cyclisme-sur-route/",
+      "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Cyclisme-sur-route/", "https://dwh.lequipe.fr/api/edito/rss?path=/Cyclisme/", "https://news.google.com/rss/search?q=site:lequipe.fr/Cyclisme-sur-route+when:2d&hl=fr&gl=FR&ceid=FR:fr"] }
   ]
 }

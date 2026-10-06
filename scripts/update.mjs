@@ -87,7 +87,7 @@ for (const src of cfg.sources) {
   if (src.on === false) { sourceStatus.push({ ...pub(src), status: "pause" }); continue; }
   let items = null, used = null, fellBack = false, err = "";
   for (const [i, url] of (src.feeds || []).entries()) {
-    try { const x = await get(url); items = parseFeed(x); if (items) { used = url; fellBack = i > 0; break; } err = "pas un flux RSS"; }
+    try { const x = await get(url); items = parseFeed(x); if (items && items.length) { used = url; fellBack = i > 0; break; } items = null; err = err || "flux vide ou invalide"; }
     catch (e) { err = e.name === "AbortError" ? "délai dépassé" : e.message; }
   }
   if (!items && src.site) {
@@ -99,6 +99,7 @@ for (const src of cfg.sources) {
   if (/news\.google\./.test(used)) items = items.map(it => ({ ...it, title: it.title.replace(/\s+[-–]\s+[^-–]+$/, ""), desc: "", image: null }));
   let kept = 0;
   for (const it of items) {
+    if (src.urlMatch && !/news\.google\./.test(used) && !it.link.includes(src.urlMatch)) continue;
     const text = it.title + " " + it.desc;
     let team = null, sport = null;
     if (src.scope.startsWith("sport:")) {

@@ -72,6 +72,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .sport .n{font-family:var(--f-mono);font-size:9px;font-weight:500;letter-spacing:0;min-width:16px;padding:1px 4px;border-radius:9px;background:var(--accent);color:var(--accent-ink);text-align:center}
 
 .teams{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;background:var(--panel);border-bottom:1px solid var(--line)}
+.teams:empty{display:none}
 .team{flex:none;display:flex;align-items:center;gap:7px;min-height:38px;padding:4px 12px 4px 5px;border-radius:20px;border:1px solid var(--line);font-size:13px;font-weight:500;white-space:nowrap}
 .team.allbtn{padding-left:12px}
 .team[aria-pressed="true"]{background:var(--fg);color:var(--panel);border-color:var(--fg)}
@@ -234,8 +235,8 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 <script>
 // ===== Vestiaire — version GitHub (sans IA). Lit data.json, mis à jour par GitHub Actions. =====
 const CATS={news:"News","avant-match":"Avant-match",resultat:"Résultat",transfert:"Mercato"};
-const SPORT_ORDER=["Basket","Foot","Baseball"];
-const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"]};
+const SPORT_ORDER=["Basket","Foot","Baseball","Rugby","F1","Cyclisme"];
+const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"],Rugby:["RUG","#7a1f2b","#e8e8e8"],F1:["F1","#d0021b","#1a1a1a"],Cyclisme:["VÉLO","#e0a800","#1a1a1a"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
 const ui={view:"inbox",sport:"all",team:"all",cat:"all",open:null};
 let P={read:[],saved:[],savedItems:{},order:[]};
@@ -312,9 +313,9 @@ function renderTop(){
   $("reload").innerHTML=`<span class="${loading?"spin":""}">${I.sync}</span><span class="lbl">Actualiser</span>`;
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
-  const sp=sports();if(ui.sport!=="all"&&loaded&&!sp.includes(ui.sport)){ui.sport="all";ui.team="all"}
+  const sp=sports();if(sp.length&&!sp.includes(ui.sport)){ui.sport=sp[0];ui.team="all";saveUi()}
   if(loaded&&isTeamSel()&&!TEAMS()[ui.team])ui.team="all";if(loaded&&isSrc()&&!chipSources(ui.sport).some(x=>"src:"+x.name===ui.team))ui.team="all";
-  $("sports").innerHTML=[["all","Tout"],...sp.map(s=>[s,s])].map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
+  $("sports").innerHTML=sp.map(s=>[s,s]).map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
   $("teams").innerHTML=teamsOf(ui.sport).map(k=>`<button class="team" data-team="${esc(k)}" aria-pressed="${ui.team===k}">${crest(k)}${esc(T[k].label||T[k].name)}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
