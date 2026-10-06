@@ -223,6 +223,22 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .card{min-width:0;max-width:100%}
 .head>div{min-width:0}
 .head button{padding:0;border-radius:12px}
+/* Écran large à l'horizontale (ordi, tablette) : liste à gauche, volet de lecture à droite, plein écran */
+.msg.sel{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.pane-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
+.pane-empty svg{width:56px;height:56px;opacity:.4;display:block;margin:0 auto 12px}
+@media (min-width:900px) and (orientation:landscape){
+  .app{max-width:none;margin:0;display:grid;grid-template-columns:clamp(380px,34vw,460px) 1fr;grid-template-rows:auto auto 1fr auto;box-shadow:none}
+  .app>.top{grid-column:1;grid-row:1}.app>.teams{grid-column:1;grid-row:2}.app>.screen{grid-column:1;grid-row:3}.app>.tabbar{grid-column:1;grid-row:4}
+  .app>.teams:empty{display:none}
+  .sheet{position:relative;inset:auto;grid-column:2;grid-row:1/5;transform:none;visibility:visible;transition:none;border-left:1px solid var(--line);z-index:1}
+  .sheet .back{visibility:hidden}
+  .sheet-body{padding:28px 40px 48px}
+  .sheet .sheet-body>*{max-width:760px;margin-left:auto!important;margin-right:auto!important}
+  .sheet h2{font-size:38px}
+  .sheet-body img{max-height:420px!important}
+  .screen{border-right:0}
+}
 </style>
 </head>
 <body>
@@ -258,6 +274,7 @@ const saveUi=()=>LS("vh-ui",{sport:ui.sport,team:ui.team,view:ui.view});
 const saveP=()=>{const ids=new Set(D.articles.map(a=>a.id));if(D.articles.length){P.read=P.read.filter(i=>ids.has(i));P.rev=(P.rev||[]).filter(i=>ids.has(i))}LS("vh-prefs",P)};
 
 const $=id=>document.getElementById(id);
+const WIDE=()=>matchMedia("(min-width:900px) and (orientation:landscape)").matches;
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const TEAMS=()=>Object.fromEntries(D.teams.map(t=>[t.key,t]));
 function sports(){const s=new Set([...D.teams.map(t=>t.sport),...D.sources.filter(x=>x.scope.startsWith("sport:")).map(x=>x.scope.slice(6))]);return [...SPORT_ORDER.filter(x=>s.has(x)),...[...s].filter(x=>!SPORT_ORDER.includes(x)).sort()]}
@@ -343,7 +360,7 @@ function renderTop(){
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["src","Sources"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
-function row(a){const m=isMasked(a),t=TEAMS()[a.team];return `<button class="msg ${isRead(a.id)?"":"unread"}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
+function row(a){const m=isMasked(a),t=TEAMS()[a.team];return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
   <span class="body"><span class="from">${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>`}</span>
   <span class="right"><time>${hm(a.publishedAt)}</time>${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
@@ -421,8 +438,8 @@ function fixtureCard(f){const T=TEAMS(),side=x=>T[x]?`${crest(x)}<span>${esc(T[x
   return `<div class="card"><h4>${esc(f.comp||"Match")}</h4><div class="fixture"><div class="side">${side(f.home)}</div><div class="mid">${f.score?esc(f.score):"vs"}<small>${f.date?esc(dayLabel(f.date))+" · "+hm(f.date):""}</small></div><div class="side">${side(f.away)}</div></div></div>`}
 function renderSheet(){
   const sh=$("sheet"),a=ui.open&&findArt(ui.open);
-  sh.classList.toggle("open",!!a);sh.setAttribute("aria-hidden",!a);
-  if(!a){$("sheetSave").innerHTML="";return}
+  sh.classList.toggle("open",!!a);sh.setAttribute("aria-hidden",!a&&!WIDE());
+  if(!a){$("sheetSave").innerHTML="";$("sheetBody").innerHTML=WIDE()?`<div class="pane-empty"><div>${I.news}<p>Choisis un article dans la liste<br>pour l'afficher ici.</p><p class="hint">Flèches ↑ ↓ pour passer d'un article à l'autre.</p></div></div>`:"";return}
   const s=isSaved(a.id),t=TEAMS()[a.team];
   $("sheetSave").innerHTML=`<button class="save-btn" data-save="1" aria-pressed="${s}">${s?I.bmkFill:I.saved}${s?"Mis de côté":"Mettre de côté"}</button>`;
   $("sheetBody").innerHTML=`<div class="head">${aCrest(a,"lg")}<div><div class="t">${t?esc(t.name):a.sport?esc(sportAll(a.sport)):""}</div><div class="meta">${esc(a.source)} · ${esc(dayLabel(a.publishedAt))} ${hm(a.publishedAt)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></div></div></div>
@@ -465,6 +482,13 @@ async function load(){
 }
 const cached=LS("vh-cache");if(cached){D=cached;loaded=true}
 render();load();
+// Volet de lecture : flèches haut/bas pour passer d'un article à l'autre
+document.addEventListener("keydown",e=>{if(!WIDE()||!["ArrowDown","ArrowUp"].includes(e.key)||e.target.closest("input,textarea"))return;
+  const rows=[...document.querySelectorAll("#screen .msg")];if(!rows.length)return;e.preventDefault();
+  let i=rows.findIndex(r=>r.dataset.msg===ui.open);i=i<0?0:Math.max(0,Math.min(rows.length-1,i+(e.key==="ArrowDown"?1:-1)));
+  const r=rows[i];if(r.dataset.masked){r.click();return}ui.open=r.dataset.msg;if(!isRead(ui.open)){P.read.push(ui.open);saveP()}render();$("sheetBody").scrollTop=0;
+  document.querySelector(`#screen .msg[data-msg="${CSS.escape(ui.open)}"]`)?.scrollIntoView({block:"nearest"})});
+matchMedia("(min-width:900px) and (orientation:landscape)").addEventListener("change",()=>render());
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&D.updatedAt&&Date.now()-Date.parse(D.updatedAt)>20*60e3)load()});
 </script>
 </body>
