@@ -42,11 +42,7 @@
       "keywords": ["piastri"],
       "data": { "type": "f1driver", "driverId": "piastri" } },
     { "key": "sei", "name": "Paul Seixas", "label": "Seixas", "short": "SEI", "sport": "Cyclisme", "comp": "Decathlon CMA CGM", "c1": "#0a4ea3", "c2": "#e30613",
-      "keywords": ["seixas"] },
-    { "key": "hea", "name": "Ben Healy", "label": "Healy", "short": "HEA", "sport": "Cyclisme", "comp": "EF Education-EasyPost", "c1": "#ff2d87", "c2": "#1d2a4d",
-      "keywords": ["healy"] },
-    { "key": "mvdp", "name": "Mathieu van der Poel", "label": "Van der Poel", "short": "VDP", "sport": "Cyclisme", "comp": "Alpecin-Premier Tech", "c1": "#00a3e0", "c2": "#0b1f3a",
-      "keywords": ["van der poel", "vanderpoel", "mvdp"] }
+      "keywords": ["seixas"] }
   ],
   "sources": [
     { "name": "L'Équipe · Basket", "logo": "lequipe", "scope": "sport:Basket", "keep": "mine", "site": "https://www.lequipe.fr/Basket/",
