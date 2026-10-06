@@ -17,7 +17,11 @@
       "data": { "type": "mlb", "id": 143 } },
     { "key": "tor", "name": "Toronto Blue Jays", "label": "Blue Jays", "short": "TOR", "sport": "Baseball", "comp": "MLB", "c1": "#134a8e", "c2": "#e8291c",
       "keywords": ["blue jays", "jays", "toronto"],
-      "data": { "type": "mlb", "id": 141 } }
+      "data": { "type": "mlb", "id": 141 } },
+    { "key": "lou", "name": "LOU Rugby", "label": "LOU", "short": "LOU", "sport": "Rugby", "comp": "Top 14", "c1": "#d71920", "c2": "#111111",
+      "keywords": ["LOU", "lou rugby", "lyon olympique universitaire", "lyonnais", "gerland", "matmut stadium"] },
+    { "key": "fra", "name": "XV de France", "label": "XV de France", "short": "FRA", "sport": "Rugby", "comp": "Équipe de France", "c1": "#0b2a8a", "c2": "#e1000f",
+      "keywords": ["xv de france", "les bleus", "equipe de france", "galthie", "dupont", "tournee de novembre", "tests de novembre", "six nations"] }
   ],
   "sources": [
     { "name": "L'Équipe · Basket", "scope": "sport:Basket", "keep": "mine", "site": "https://www.lequipe.fr/Basket/",
@@ -36,6 +40,8 @@
       "feeds": ["https://www.lephoceen.fr/rss.xml", "https://news.google.com/rss/search?q=site:lephoceen.fr+when:7d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "L'Équipe · OM", "scope": "om", "filter": true, "site": "https://www.lequipe.fr/Football/Marseille/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Football/"] },
+    { "name": "L'Équipe · Rugby", "scope": "sport:Rugby", "keep": "mine", "site": "https://www.lequipe.fr/Rugby/",
+      "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Rugby/"] },
     { "name": "Passion MLB", "scope": "sport:Baseball", "keep": "all", "chip": true, "site": "https://passionmlb.com/",
       "feeds": ["https://passionmlb.com/feed/"] },
     { "name": "Philadelphia Inquirer", "scope": "phs", "site": "https://www.inquirer.com/phillies/",
