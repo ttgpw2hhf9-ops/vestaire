@@ -3,7 +3,7 @@ name: Mettre à jour le hub
 on:
   schedule:
     # Toutes les 30 min de 4h à 22h59 UTC = 6h–1h (heure d'été) / 5h–0h (heure d'hiver), heure de Paris
-    - cron: "*/30 4-22 * * *"
+    - cron: "0 4-22/2 * * *"
   workflow_dispatch: {}
   push:
     branches: [main]
@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: hub
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   update:
