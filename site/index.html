@@ -195,6 +195,7 @@ tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight
 .status.err{color:var(--loss)}
 .status .lnk{color:var(--accent);text-decoration:underline;padding:0;font-size:12px}
 .status.ok{align-items:center}
+.refresh-btn{margin-left:auto;flex:none;width:34px;height:34px;border-radius:17px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);color:var(--fg)}.refresh-btn svg{width:16px!important;height:16px!important;margin:0!important;color:var(--fg)!important}
 .status [data-allread]{margin-left:auto;white-space:nowrap;min-height:32px}
 .spin{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -260,6 +261,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .sw[aria-pressed="true"]{outline:3px solid var(--fg);outline-offset:2px}
 .sw.pick{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}
 .sw.pick input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+label.btn{display:flex;align-items:center;justify-content:center;flex:1;cursor:pointer;min-height:44px}
 .link{color:var(--accent);text-decoration:underline;padding:0;font-size:inherit}
 .seg{display:flex;background:rgba(0,0,0,.28);border-radius:12px;padding:4px;gap:4px}
 .seg button{flex:1;min-height:40px;border-radius:9px;color:var(--muted);font-weight:500}
@@ -274,8 +276,8 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip.sel{appearance:none;-webkit-appearance:none;color:var(--fg);padding:0 12px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(58px,1fr));gap:6px;margin-top:12px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}
-.tile b{display:block;font:700 26px/1.1 var(--f-display)}.tile span{font-size:10.5px;color:var(--muted)}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer}.tile[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--panel))}
+.tile b{display:block;font:700 26px/1.1 var(--f-display)}.tile span{display:block;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .muted{color:var(--muted);font-size:13px}
 .log-row{display:block;width:calc(100% - 32px);margin:0 16px 10px;text-align:left;padding:12px}
 .log-row .row{display:flex;align-items:center;gap:10px}
@@ -285,7 +287,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .st .hs{display:inline-block;width:.5em;overflow:hidden;vertical-align:top}
 .gold{color:#f5c24a}
 .quote{margin-top:8px;font-style:italic}
-.fab{position:sticky;bottom:14px;display:block;margin:6px 16px 14px auto;z-index:3;background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:28px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.fab{position:sticky;bottom:14px;display:block;margin:16px 16px 14px auto;z-index:3;background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:28px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .tt,.cmp{width:100%;border-collapse:collapse;font-size:14px}
 .tt th,.cmp th{font:600 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 8px}
 .tt td,.cmp td{padding:9px 8px;border-top:1px solid var(--line)}
@@ -465,20 +467,36 @@ const I={
  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',
  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 8.5 4 9.5 6-.4.8-1.2 2-2.4 3.2M6.4 7.4C4.5 8.7 3.1 10.6 2.5 12c1 2 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
  log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12 8h4M12 12h4"/></svg>',
- gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 2.5h3.4l.5 2.6 1.6.7 2.2-1.5 2.4 2.4-1.5 2.2.7 1.6 2.6.5v3.4l-2.6.5-.7 1.6 1.5 2.2-2.4 2.4-2.2-1.5-1.6.7-.5 2.6h-3.4l-.5-2.6-1.6-.7-2.2 1.5-2.4-2.4 1.5-2.2-.7-1.6-2.6-.5v-3.4l2.6-.5.7-1.6-1.5-2.2 2.4-2.4 2.2 1.5 1.6-.7z"/><circle cx="12" cy="12" r="3.2"/></svg>',
  palette:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.3-1.7-.4-1.1.3-2.3 1.5-2.3H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15.5" cy="7.5" r="1.2"/></svg>',
  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></svg>'
 };
 
 // Non lus de la sélection affichée (sport/équipe, et catégorie dans l'Inbox)
 const visibleUnread=()=>D.articles.filter(a=>!isRead(a.id)&&inScope(a)&&(ui.view!=="inbox"||ui.cat==="all"||a.cat===ui.cat));
+// État du robot GitHub (lecture publique, sans jeton) : bloqué / en retard / OK
+let robot={state:"",at:0,run:null,since:null};
+async function checkRobot(){if(!D.repo)return;
+  try{const r=await fetch(`https://api.github.com/repos/${D.repo}/actions/runs?per_page=8`,{cache:"no-store"});if(!r.ok)throw 0;const runs=(await r.json()).workflow_runs||[];
+    const now=Date.now(),open=runs.filter(x=>x.status!=="completed"),stuck=open.filter(x=>now-Date.parse(x.created_at)>15*6e4).sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at))[0];
+    const lastOk=runs.find(x=>x.conclusion==="success");
+    if(stuck)robot={state:"stuck",run:stuck.html_url,since:stuck.created_at,at:now};
+    else if(open.length)robot={state:"running",at:now};
+    else if(lastOk&&now-Date.parse(lastOk.updated_at)>70*6e4&&isRobotHours())robot={state:"late",since:lastOk.updated_at,at:now,run:`https://github.com/${D.repo}/actions`};
+    else robot={state:"ok",at:now}}
+  catch(e){robot={state:"",at:Date.now()}}
+  render()}
+const isRobotHours=()=>{const h=new Date().getUTCHours();return h>=4&&h<=22};
 function statusHtml(){
-  const allRead="";
-  if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span></div>`;
+  if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span>${refreshBtn()}</div>`;
   if(!D.updatedAt)return "";
-  const old=Date.now()-Date.parse(D.updatedAt)>3*36e5;
-  return `<div class="status ${old?"err":"ok"}">${old?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${old?" · la mise à jour automatique semble en pause":""}</span>${allRead}</div>`;
+  const bad=robot.state==="stuck"||robot.state==="late";
+  const rb=robot.state==="stuck"?` · <b>robot bloqué depuis ${hm(robot.since)}</b> · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le débloquer</a>`
+    :robot.state==="late"?` · <b>robot en retard</b> (dernier passage ${hm(robot.since)}) · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">voir</a>`
+    :robot.state==="running"?" · robot en cours de passage":robot.state==="ok"?" · robot OK":"";
+  return `<div class="status ${bad?"err":"ok"}">${bad?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${rb}</span>${refreshBtn()}</div>`;
 }
+const refreshBtn=()=>`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news">${loading?"…":I.sync}</button>`;
 function renderTop(){
   const toMark=visibleUnread().length;
   $("allread").title="Tout marquer comme lu";$("journal").title="Journal L'Équipe";
@@ -634,19 +652,19 @@ function loadPhoto(k,file){const fr=new FileReader();fr.onload=()=>{const im=new
 function renderLook(){
   const k=ui.lookKey,t=TEAMS()[k];if(!t)return `<p class="empty">Équipe inconnue.</p>`;
   const th=themeOf(k),def=t.theme||{},sw=[...new Set([def.accent,t.c1,t.c2].filter(c=>c&&c.toLowerCase()!=="#ffffff"&&c.toLowerCase()!=="#000000"))];
-  const sc=$("screen"),W=Math.max(300,sc.clientWidth||390),H=Math.max(400,sc.clientHeight||640),pw=Math.min(W-64,320),ph=Math.round(pw*H/W);
+  const sc=$("screen"),W=Math.max(300,sc.clientWidth||390),H=Math.max(400,sc.clientHeight||640),ph=Math.min(360,Math.round(240*H/W)),pw=Math.round(ph*W/H);
   const hasPhoto=!!LS("vh-bg-"+k);
   return `<div class="pad"><div style="display:flex;align-items:center;gap:10px">${crest(k,"lg")}<h2 class="h2" style="flex:1;margin:0">Apparence · ${esc(t.label||t.name)}</h2><button class="btn sm primary" data-view="${esc(ui.lookBack||"teams")}">Terminé</button></div>
   <div class="sec">Couleur</div><div class="card"><div class="swatches">${sw.map(c=>`<button class="sw" data-accent="${esc(c)}" aria-pressed="${th.accent.toLowerCase()===c.toLowerCase()}" style="background:${esc(c)}" aria-label="Couleur ${esc(c)}"></button>`).join("")}<label class="sw pick" title="Choisir une autre couleur"><input type="color" id="accentPick" value="${esc(/^#[0-9a-f]{6}$/i.test(th.accent)?th.accent:"#5b8ff0")}"></label></div>
   <p class="hint">Couleurs du club, ou la roue pour choisir la tienne.${(P.theme[k]||{}).accent?` <button class="link" data-accent="">Revenir à la couleur d'origine</button>`:""}</p></div>
   <div class="sec">Fond derrière les news</div><div class="card"><div class="seg">${[["logo",PEOPLE(k)?"Photo officielle":"Logo"],["photo","Ma photo"],["none","Aucun"]].map(([m,l])=>`<button data-bgmode="${m}" aria-pressed="${th.mode===m}">${l}</button>`).join("")}</div>
-  ${th.mode==="photo"&&!hasPhoto?`<p class="hint">Choisis une photo ci-dessous.</p>`:""}
+  <div class="actions" style="margin-top:10px"><label class="btn">${I.photo||""}${hasPhoto?"Changer de photo…":"Choisir une photo…"}<input type="file" id="bgFile" accept="image/*" hidden></label>${th.dx||th.dy||th.z!==1?`<button class="btn" data-recenter="1">Recentrer</button>`:""}</div>
   ${th.mode!=="none"?`<div class="crop" id="crop" style="width:${pw}px;height:${ph}px;--acc:${esc(th.accent)};background:${th.bar}"><img id="cropImg" src="${esc(bgSrc(k,th))}" alt="" draggable="false" style="${wmStyle(k,{...th,op:Math.max(th.op,.35)},pw,ph)}"><span class="frame-lbl">Aperçu de l'écran</span></div>
   <p class="hint">Fais glisser l'image pour la déplacer.</p>
   <label class="rng">Zoom<input type="range" id="zoomR" min="0.5" max="3" step="0.05" value="${th.z}"></label>
   <label class="rng">Discret<input type="range" id="opR" min="0.04" max="0.45" step="0.01" value="${th.op}">Marqué</label>`:""}
-  <div class="actions"><label class="btn">${hasPhoto?"Changer de photo…":"Choisir une photo…"}<input type="file" id="bgFile" accept="image/*" hidden></label>${th.dx||th.dy||th.z!==1?`<button class="btn" data-recenter="1">Recentrer</button>`:""}</div>
-  ${syncCfg?`<p class="hint">Ta photo et tes réglages sont synchronisés avec tes autres appareils.</p>`:`<p class="hint">Active la synchronisation (Réglages) pour retrouver ta photo sur tes autres appareils.</p>`}</div></div>`}
+  ${syncCfg?`<p class="hint">Ta photo et tes réglages sont synchronisés avec tes autres appareils.</p>`:`<p class="hint">Active la synchronisation (Réglages) pour retrouver ta photo sur tes autres appareils.</p>`}</div>
+  ${P.theme[k]&&Object.keys(P.theme[k]).some(x=>x!=="t"&&x!=="pt")?`<div class="actions" style="margin-top:16px"><button class="btn" data-lookreset="1" style="flex:1">Remettre par défaut (couleur et logo du club)</button></div>`:""}</div>`}
 // Glisser l'image dans l'aperçu
 let drag=null;
 document.addEventListener("pointerdown",e=>{const c=e.target.closest("#crop");if(!c)return;const th=themeOf(ui.lookKey);drag={x:e.clientX,y:e.clientY,dx:th.dx,dy:th.dy,W:c.clientWidth,H:c.clientHeight};c.setPointerCapture(e.pointerId);e.preventDefault()});
@@ -662,7 +680,7 @@ document.addEventListener("change",e=>{const id=e.target.id,k=ui.lookKey;
   else if(id==="bgFile"&&e.target.files[0])loadPhoto(k,e.target.files[0]);
   else if(e.target.dataset.draft!==undefined){const k2=e.target.dataset.draft,x=ui.draft=ui.draft||{};x[k2]=e.target.value;
     if(k2==="sport"){x.team="";delete x._sug;render()}
-    else if(k2==="team"){const T=TEAMS(),me=x.team&&T[x.team]?T[x.team].label||T[x.team].name:"";x.side=x.side||"home";if(me&&!x.home&&!x.away){x.home=me}if(me&&!x.comp)x.comp=T[x.team].comp||"";render()}}});
+    else if(k2==="team"){const T=TEAMS(),me=x.team&&T[x.team]?T[x.team].label||T[x.team].name:"";x.side=x.side||"home";if(me&&!x.home&&!x.away){x.home=me}if(me&&!x.comp)x.comp=(T[x.team].comp||"").split(/\s*[·(]/)[0].trim();render()}}});
 
 // ===== Carnet de matchs =====
 const CS=["Foot","Basket","Baseball","Rugby"],CSI={Foot:"⚽",Basket:"🏀",Baseball:"⚾",Rugby:"🏉"};
@@ -696,15 +714,14 @@ function entryCard(e){const r=resultOf(e);return `<button class="card log-row" d
 function renderLog(){ensureSeasons();
   const hist=ui.logSeason&&P.seasons[ui.logSeason]?P.seasons[ui.logSeason]:null;
   let list=entries().filter(e=>hist?inSeason(e,hist.id):isCurrent(e));
-  const st=stats(list),fs=ui.logSport||"all";
+  const st=stats(list),fs=ui.logSport||"all",stF=fs==="all"||hist?st:stats(list.filter(e=>e.sport===fs));
   const closed=CS.flatMap(sp=>seasonsOf(sp).filter(s=>s.closed)).sort((a,b)=>b.start.localeCompare(a.start));
-  let h=`<div class="pad" style="padding-bottom:4px"><h2 class="h2">Mon carnet</h2>
-  <div class="chips"><button class="chip" data-logseason="" aria-pressed="${!hist}">Saisons en cours</button>${closed.length?`<select class="chip sel" id="histSel" aria-label="Historique"><option value="">Historique ▾</option>${closed.map(s=>`<option value="${esc(s.id)}" ${hist&&hist.id===s.id?"selected":""}>${esc(s.sport+" "+s.name)}</option>`).join("")}</select>`:`<span class="chip" aria-disabled="true" style="opacity:.5">Historique (vide)</span>`}</div>
+  let h=`<div class="pad" style="padding-bottom:4px"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1;margin:0">Mon carnet</h2><button class="btn sm" data-view="seasons">Mes saisons</button></div>
+  <div class="chips" style="margin-top:12px"><button class="chip" data-logseason="" aria-pressed="${!hist}">Saisons en cours</button><button class="chip" data-view="compare">Comparer</button><span style="flex:1"></span>${closed.length?`<select class="chip sel" id="histSel" aria-label="Historique"><option value="">Historique ▾</option>${closed.map(s=>`<option value="${esc(s.id)}" ${hist&&hist.id===s.id?"selected":""}>${esc(s.sport+" "+s.name)}</option>`).join("")}</select>`:`<span class="chip" aria-disabled="true" style="opacity:.5;display:inline-flex;align-items:center">Historique</span>`}</div>
   <p class="hint" style="margin:6px 0 0">${hist?`Saison clôturée · ${CSI[hist.sport]} ${esc(hist.sport)} ${esc(hist.name)}`:CS.map(sp=>{const c=currentSeason(sp);return `${CSI[sp]} ${sp} ${c?esc(c.name):"—"}`}).join(" · ")}</p>
-  <div class="tiles">${[["matchs",st.n]].concat((hist?[hist.sport]:CS).map(sp=>[CSI[sp]+" "+sp,st.bySport[sp]||0])).map(([l,v])=>`<div class="tile"><b>${v}</b><span>${l}</span></div>`).join("")}</div>
-  <p class="muted" style="margin:8px 0 0">${st.n?`★ ${fmtN(st.avg)} de moyenne · ${st.stade} au stade · ${st.tele} à la télé · bilan de tes équipes : ${st.W} V · ${st.D} N · ${st.L} D`:"Aucun match noté pour l'instant. Touche « + Ajouter un match » après avoir regardé un match."}</p>
-  ${!hist?`<div class="chips" style="margin-top:12px">${["all",...CS].map(sp=>`<button class="chip" data-logsport="${sp}" aria-pressed="${fs===sp}">${sp==="all"?"Tous":sp}</button>`).join("")}</div>`:""}
-  <div class="chips" style="margin-top:8px">${[["date","Récents"],["note","Mieux notés"],["team","Par équipe"]].map(([k,l])=>`<button class="chip" data-logsort="${k}" aria-pressed="${(ui.logSort||"date")===k}">${l}</button>`).join("")}</div></div>`;
+  <div class="tiles">${[["all","matchs",st.n]].concat((hist?[hist.sport]:CS).map(sp=>[sp,CSI[sp]+" "+sp,st.bySport[sp]||0])).map(([k,l,v])=>`<button class="tile" ${hist?"":`data-logsport="${k}"`} aria-pressed="${!hist&&fs===k}"><b>${v}</b><span>${l}</span></button>`).join("")}</div>
+  <p class="muted" style="margin:8px 0 0">${st.n?`${fs!=="all"&&!hist?esc(fs)+" : ":""}★ ${fmtN(stF.avg)} de moyenne · ${stF.stade} au stade · ${stF.tele} à la télé · bilan de tes équipes : ${stF.W} V · ${stF.D} N · ${stF.L} D`:"Aucun match noté pour l'instant. Touche « + Ajouter un match » après avoir regardé un match."}</p>
+  <div class="chips" style="margin-top:12px">${[["date","Récents"],["note","Mieux notés"],["team","Par équipe"]].map(([k,l])=>`<button class="chip" data-logsort="${k}" aria-pressed="${(ui.logSort||"date")===k}">${l}</button>`).join("")}</div></div>`;
   if(fs!=="all"&&!hist)list=list.filter(e=>e.sport===fs);
   const srt=ui.logSort||"date";
   if(srt==="team"){const s2=stats(list),T=TEAMS(),rows=Object.entries(s2.teams).sort((a,b)=>b[1].n-a[1].n);
@@ -716,7 +733,6 @@ function renderLog(){ensureSeasons();
     list.sort(srt==="note"?(a,b)=>(b.rating||0)-(a.rating||0)||b.date.localeCompare(a.date):(a,b)=>b.date.localeCompare(a.date)||(b.t||0)-(a.t||0));
     let last="";for(const e of list){const m=srt==="date"?new Date(e.date+"T12:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"}):"";if(m&&m!==last){h+=`<div class="day">${esc(m)}</div>`;last=m}h+=entryCard(e)}
   }
-  h+=`<div class="actions" style="margin:4px 16px 8px"><button class="btn" data-view="seasons">Mes saisons</button><button class="btn" data-view="compare">Comparer les saisons</button></div>`;
   return h+`<button class="fab" data-lognew="1">+ Ajouter un match</button>`}
 
 // --- Formulaire ajouter / modifier ---
@@ -793,6 +809,7 @@ function logClick(b,d){
   else if(d.accent!==undefined){const th={...(P.theme[ui.lookKey]||{})};if(d.accent)setTheme(ui.lookKey,{accent:d.accent});else{delete th.accent;P.theme={...P.theme,[ui.lookKey]:{...th,t:Date.now()}};saveP()}}
   else if(d.bgmode){if(d.bgmode==="photo"&&!LS("vh-bg-"+ui.lookKey)){setTheme(ui.lookKey,{mode:"photo"});render();$("bgFile")?.click();return true}setTheme(ui.lookKey,{mode:d.bgmode,op:d.bgmode==="photo"?.22:.10,dx:0,dy:0,z:1})}
   else if(d.recenter){setTheme(ui.lookKey,{dx:0,dy:0,z:1})}
+  else if(d.lookreset){if(!confirm("Revenir à la couleur et au logo d'origine ?"))return true;const pt=(P.theme[ui.lookKey]||{}).pt;P.theme={...P.theme,[ui.lookKey]:{t:Date.now(),...(pt?{pt}:{})}};saveP()}
   else if(d.lognew){ui.logEdit=null;const cs=currentSeason("Foot");ui.draft={sport:"Foot",date:today(),how:"tele",side:"home"};ui.view="logform";$("screen").scrollTop=0}
   else if(d.logedit){const e=P.log[d.logedit];if(!e)return true;ui.logEdit=e.id;ui.draft={...e};ui.view="logform";$("screen").scrollTop=0}
   else if(d.sug!==undefined){const s=suggestions()[+d.sug];ui.draft={...(ui.draft||{}),...s,_sug:+d.sug}}
@@ -829,7 +846,7 @@ function render(){renderTop();const v=ui.view;
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
-  if(b.id==="reload"){load();return}
+  if(b.id==="reload"||d.refresh){load(true);return}
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
   if(d.syncNow){sync();return}
   if(d.syncOff){syncCfg=null;try{localStorage.removeItem(SYNC_KEY)}catch(e){}render();return}
@@ -855,8 +872,8 @@ document.addEventListener("click",e=>{
   else return;
   render();
 });
-async function load(){
-  loading=true;render();
+async function load(manual){
+  loading=true;render();if(manual||!robot.at||Date.now()-robot.at>5*6e4)checkRobot();
   try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);D=await r.json();loaded=true;loadErr=null;LS("vh-cache",D)}
   catch(err){loadErr=err.message;const c=LS("vh-cache");if(c&&!loaded){D=c;loaded=true}}
   loading=false;render();
