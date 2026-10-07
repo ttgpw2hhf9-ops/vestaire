@@ -226,7 +226,7 @@ async function sofascore(t) {
 // TheSportsDB (clé publique gratuite) : Nanterre, LOU, XV de France
 const TS = "https://www.thesportsdb.com/api/v1/json/123/";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const TS_COMP = { "French LNB": "Betclic Élite", "Basketball Champions League": "BCL", "French Top 14": "Top 14", "European Rugby Champions Cup": "Champions Cup" };
+const TS_COMP = { "Swiss Super League": "Super League", "Swiss Cup": "Coupe de Suisse", "French LNB": "Betclic Élite", "Basketball Champions League": "BCL", "French Top 14": "Top 14", "European Rugby Champions Cup": "Champions Cup" };
 async function tsGet(path) { if (!process.env.NOSLEEP) await sleep(2100); return await get(TS + path, { json: true }) || {}; } // 30 requêtes/min max
 async function tsdb(t) {
   const id = String(t.data.id), evs = new Map(); let ok = 0;
@@ -237,6 +237,8 @@ async function tsdb(t) {
     const d = new Date(now - i * DAY).toISOString().slice(0, 10);
     try { add((await tsGet(`eventsday.php?d=${d}&l=${l}`)).events); ok++; } catch {}
   }
+  let standings = null, tableCache;
+  if (t.data.table) try { const lt = await leagueTable(t); standings = lt.standings; tableCache = lt.cache; add(lt.events); ok++; } catch {}
   if (!ok) throw new Error("TheSportsDB injoignable");
   const next = [], last = [];
   for (const e of evs.values()) {
@@ -249,8 +251,6 @@ async function tsdb(t) {
       last.push({ ...g, score: `${a}-${b}`, result: a > b ? "W" : a < b ? "L" : "D" });
     } else if (Date.parse(g.date) > now - 3 * 36e5) next.push(g);
   }
-  let standings = null, tableCache;
-  if (t.data.table) try { const lt = await leagueTable(t); standings = lt.standings; tableCache = lt.cache; } catch {}
   return { next, last, standings, tableCache };
 }
 // Classement Betclic Élite recalculé à partir des résultats journée par journée (TheSportsDB, gratuit).
@@ -261,27 +261,33 @@ async function leagueTable(t) {
   const lg = t.data.table, season = `${seasonYear()}-${seasonYear() + 1}`;
   const old = (prevData.teamData || {})[t.key]?.tableCache;
   const cache = old && old.season === season ? old : { season, rounds: {} };
+  const raw = []; // matchs lus pendant ce passage (pour l'agenda et les résultats de l'équipe)
   for (let r = 1, fetched = 0; r <= 50 && fetched < 40; r++) {
     if (cache.rounds[r]?.done) continue;
     let evs = [];
     try { evs = (await tsGet(`eventsround.php?id=${lg}&r=${r}&s=${season}`)).events || []; fetched++; } catch { break; }
+    raw.push(...evs);
     const games = evs.map(e => [e.strHomeTeam, e.strAwayTeam, e.intHomeScore, e.intAwayScore]);
     const played = games.filter(g => g[2] != null && g[2] !== "" && g[3] != null && g[3] !== "");
     if (!evs.length || !played.length) { delete cache.rounds[r]; break; }
     cache.rounds[r] = { done: played.length === games.length, games: played };
   }
+  const foot = t.data.tableMode === "foot"; // foot : 3 pts victoire, 1 pt nul ; basket : victoires-défaites
   const tab = new Map();
-  const row = n => { if (!tab.has(n)) tab.set(n, { name: SHORT[n] || n, w: 0, l: 0, pf: 0, pa: 0 }); return tab.get(n); };
+  const row = n => { if (!tab.has(n)) tab.set(n, { name: SHORT[n] || n, w: 0, d: 0, l: 0, pf: 0, pa: 0 }); return tab.get(n); };
   for (const rd of Object.values(cache.rounds)) for (const [h, a, hs, as] of rd.games) {
     const H = row(h), A = row(a), x = +hs, y = +as;
     H.pf += x; H.pa += y; A.pf += y; A.pa += x;
-    if (x > y) { H.w++; A.l++; } else { A.w++; H.l++; }
+    if (x > y) { H.w++; A.l++; } else if (x < y) { A.w++; H.l++; } else { H.d++; A.d++; }
   }
-  const me = norm(t.data.tableName || t.name);
-  const rows = [...tab.values()].sort((p, q) => q.w - p.w || p.l - q.l || (q.pf - q.pa) - (p.pf - p.pa))
-    .map((x, i) => ({ rank: i + 1, name: x.name, val: `${x.w}-${x.l}`, me: norm(x.name).includes(me) }));
+  const me = norm(t.data.tableName || t.name), pts = x => 3 * x.w + x.d;
+  const rows = [...tab.values()].sort(foot
+      ? (p, q) => pts(q) - pts(p) || (q.pf - q.pa) - (p.pf - p.pa) || q.pf - p.pf
+      : (p, q) => q.w - p.w || p.l - q.l || (q.pf - q.pa) - (p.pf - p.pa))
+    .map((x, i) => ({ rank: i + 1, name: x.name, val: foot ? String(pts(x)) : `${x.w}-${x.l}`, me: norm(x.name).includes(me) }));
   const nr = Object.keys(cache.rounds).length;
-  return { cache, standings: rows.length ? { title: `Betclic Élite · après ${nr} journée${nr > 1 ? "s" : ""}`, unit: "V-D", rows: trimRows(rows) } : null };
+  const title = `${t.data.tableTitle || "Betclic Élite"} · après ${nr} journée${nr > 1 ? "s" : ""}`;
+  return { cache, events: raw, standings: rows.length ? { title, unit: foot ? "pts" : "V-D", rows: foot ? rows : trimRows(rows) } : null };
 }
 // EuroLeague : API officielle (classement de la dernière journée commencée)
 async function euroleague(t) {
