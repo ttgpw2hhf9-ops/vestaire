@@ -96,7 +96,8 @@ function goodTitle(title, srcName) {
   const t = norm(String(title || "")).replace(/^[\s\-–—|:]+|[\s\-–—|:]+$/g, "");
   const letters = (t.match(/[a-z]/g) || []).length, words = t.split(/\s+/).filter(w => /[a-z]/.test(w)).length;
   if (letters < 4 || words < 2) return false;
-  if (srcName && t === norm(srcName)) return false;
+  const bare = x => norm(x).replace(/\.(com|fr|net|ch|org|co)\b/g, "").replace(/[^a-z0-9]/g, "");
+  if (srcName && (t === norm(srcName) || bare(t) === bare(srcName) || bare(t).length < 6)) return false; // ex. « SO FOOT.com »
   return true;
 }
 
