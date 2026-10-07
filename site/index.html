@@ -330,6 +330,7 @@ select.in{appearance:auto}
 .chip.pickc{display:inline-flex;align-items:center;gap:6px;padding-left:6px}.chip.pickc .crest{width:22px;height:22px;font-size:9px}
 .logo-prev{width:56px;height:56px;border-radius:12px;background:#fff;display:grid;place-items:center;flex:none;overflow:hidden}.logo-prev img{width:100%;height:100%;object-fit:contain}
 .refresh-btn[disabled]{opacity:.6}
+.st-txt{cursor:pointer}
 </style>
 </head>
 <body>
@@ -492,7 +493,7 @@ const I={
 // Non lus de la sélection affichée (sport/équipe, et catégorie dans l'Inbox)
 const visibleUnread=()=>D.articles.filter(a=>!isRead(a.id)&&inScope(a)&&(ui.view!=="inbox"||ui.cat==="all"||a.cat===ui.cat));
 // État du robot GitHub (lecture publique, sans jeton) : bloqué / en retard / OK
-let robot={state:"",at:0,run:null,since:null};
+let robot={state:"",at:0,run:null,since:null},robotTimer=null,robotPrev="";
 async function checkRobot(){if(!D.repo)return;
   try{const r=await fetch(`https://api.github.com/repos/${D.repo}/actions/runs?per_page=8`,{cache:"no-store"});if(!r.ok)throw 0;const runs=(await r.json()).workflow_runs||[];
     const now=Date.now(),open=runs.filter(x=>x.status!=="completed"),stuck=open.filter(x=>now-Date.parse(x.created_at)>15*6e4).sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at))[0];
@@ -504,6 +505,10 @@ async function checkRobot(){if(!D.repo)return;
     else if(lastOk&&now-Date.parse(lastOk.updated_at)>150*6e4&&isRobotHours())robot={state:"late",since:lastOk.updated_at,at:now,run:`https://github.com/${D.repo}/actions`};
     else robot={state:"ok",at:now}}
   catch(e){robot={state:"",at:Date.now()}}
+  // Tant que le robot tourne : nouvelle vérification toutes les 30 s ; à la fin, rechargement des news
+  const was=robotPrev;robotPrev=robot.state;clearTimeout(robotTimer);
+  if(robot.state==="running"&&!launch.busy)robotTimer=setTimeout(checkRobot,30e3);
+  if(was==="running"&&robot.state!=="running"&&!launch.busy){load(true);return}
   render()}
 const isRobotHours=()=>{const h=new Date().getUTCHours();return h>=4&&h<=22};
 function statusHtml(){
@@ -515,9 +520,9 @@ function statusHtml(){
     :robot.state==="stuck"?` · <b>robot bloqué depuis ${hm(robot.since)}</b> · ${adm?`<button class="lnk" data-unstick="${esc(robot.run)}">le débloquer</button>`:`<a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le débloquer</a>`}`
     :robot.state==="late"?` · <b>robot en retard</b> (dernier passage ${hm(robot.since)}) · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">voir</a>`
     :robot.state==="running"?" · robot en cours de passage":robot.state==="ok"?" · robot OK":"";
-  return `<div class="status ${bad?"err":"ok"}">${bad?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${rb}</span>${refreshBtn()}</div>`;
+  return `<div class="status ${bad?"err":"ok"}">${bad?I.warn:I.check}<span class="st-txt" data-robotcheck="1" role="button" tabindex="0" title="Toucher pour vérifier l'état du robot">Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${rb}</span>${refreshBtn()}</div>`;
 }
-const refreshBtn=()=>(adm?`<button class="refresh-btn" data-launch="1" aria-label="Lancer le robot" title="Lancer le robot (nouvelles news dans 1 à 2 min)" ${launch.busy?"disabled":""}>${launch.busy?"…":I.play}</button>`:"")+`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news" style="margin-left:${adm?"6px":"auto"}">${loading?"…":I.sync}</button>`;
+const refreshBtn=()=>adm?`<button class="refresh-btn" data-launch="1" aria-label="Lancer le robot" title="Lancer le robot (nouvelles news dans 1 à 2 min)" ${launch.busy?"disabled":""}>${launch.busy?"…":I.sync}</button>`:`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news">${loading?"…":I.sync}</button>`;
 function renderTop(){
   const toMark=visibleUnread().length;
   $("allread").title="Tout marquer comme lu";$("journal").title="Journal L'Équipe";
@@ -1016,6 +1021,7 @@ function render(){renderTop();const v=ui.view;
   renderSheet();applyTheme()}
 
 document.addEventListener("click",e=>{
+  if(e.target.closest("[data-robotcheck]")){load(true);return}
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(b.id==="reload"||d.refresh){load(true);return}
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
