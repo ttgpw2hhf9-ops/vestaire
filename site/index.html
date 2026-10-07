@@ -195,7 +195,7 @@ tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight
 .status.err{color:var(--loss)}
 .status .lnk{color:var(--accent);text-decoration:underline;padding:0;font-size:12px}
 .status.ok{align-items:center}
-.refresh-btn{margin-left:auto;flex:none;width:34px;height:34px;border-radius:17px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);color:var(--fg)}.refresh-btn svg{width:16px!important;height:16px!important;margin:0!important;color:var(--fg)!important}
+.status .refresh-btn:first-of-type{margin-left:auto}.refresh-btn{flex:none;width:34px;height:34px;border-radius:17px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line);color:var(--fg)}.refresh-btn svg{width:16px!important;height:16px!important;margin:0!important;color:var(--fg)!important}
 .status [data-allread]{margin-left:auto;white-space:nowrap;min-height:32px}
 .spin{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -314,6 +314,22 @@ select.in{appearance:auto}
 .card.inner{background:var(--panel-2);margin:0;line-height:1.7}
 .btn.danger{background:var(--loss);border-color:var(--loss);color:#fff}
 .btn.danger-o{color:var(--loss);border-color:var(--loss)}
+
+/* ===== Réglages : robot, sources, équipes ===== */
+.menu{padding:4px 0}.mrow{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:12px 14px;border-top:1px solid var(--line)}.mrow:first-child{border-top:0}
+.mrow b{font-size:15px}.mrow::after{content:"›";position:absolute;right:16px;color:var(--muted);font-size:20px}.mrow{position:relative;padding-right:36px}
+.btn.wide{display:block;width:100%;margin:12px 0 4px}
+.srow{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}.srow:first-child{border-top:0}.srow .m{flex:1;min-width:0}.srow .m b{font-size:15px}
+.srow.gone .m{opacity:.55;text-decoration:line-through}
+.sb{flex:none;padding:6px 10px;border-radius:9px;border:1px solid var(--line);font-size:12px;color:var(--fg)}.sb.del{color:var(--loss);border-color:var(--loss)}
+.pill.warn{border-color:var(--warn);color:var(--warn)}
+.pendbar{position:sticky;bottom:10px;z-index:4;display:flex;align-items:center;gap:8px;margin:16px 0 8px;padding:10px 12px;border-radius:14px;background:var(--panel-2);border:1px solid var(--warn);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.pendbar span{flex:1;font-weight:600;color:var(--warn);font-size:14px}
+.note2{font-size:13px;color:var(--fg);border-left:3px solid var(--accent)}.note3{font-size:13px;border-left:3px solid var(--warn)}
+.tgrow{display:flex;align-items:center;gap:12px;margin-top:12px}
+.chip.pickc{display:inline-flex;align-items:center;gap:6px;padding-left:6px}.chip.pickc .crest{width:22px;height:22px;font-size:9px}
+.logo-prev{width:56px;height:56px;border-radius:12px;background:#fff;display:grid;place-items:center;flex:none;overflow:hidden}.logo-prev img{width:100%;height:100%;object-fit:contain}
+.refresh-btn[disabled]{opacity:.6}
 </style>
 </head>
 <body>
@@ -327,7 +343,7 @@ select.in{appearance:auto}
     <nav class="sports" id="sports" aria-label="Sport"></nav>
   </header>
   <div class="teams" id="teams" role="group" aria-label="Équipe"></div>
-  <div class="wm" id="wm" aria-hidden="true" hidden><img id="wmImg" alt=""></div>
+  <div class="wm" id="wm" aria-hidden="true" hidden><img id="wmImg" alt="" onerror="this.parentNode.hidden=true"></div>
   <main class="screen" id="screen"></main>
   <nav class="tabbar" id="tabbar" aria-label="Sections"></nav>
   <section class="sheet" id="sheet" aria-label="Message" aria-hidden="true">
@@ -466,6 +482,7 @@ const I={
  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',
  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',
  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 8.5 4 9.5 6-.4.8-1.2 2-2.4 3.2M6.4 7.4C4.5 8.7 3.1 10.6 2.5 12c1 2 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+ play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
  log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12 8h4M12 12h4"/></svg>',
  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 2.5h3.4l.5 2.6 1.6.7 2.2-1.5 2.4 2.4-1.5 2.2.7 1.6 2.6.5v3.4l-2.6.5-.7 1.6 1.5 2.2-2.4 2.4-2.2-1.5-1.6.7-.5 2.6h-3.4l-.5-2.6-1.6-.7-2.2 1.5-2.4-2.4 1.5-2.2-.7-1.6-2.6-.5v-3.4l2.6-.5.7-1.6-1.5-2.2 2.4-2.4 2.2 1.5 1.6-.7z"/><circle cx="12" cy="12" r="3.2"/></svg>',
  palette:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.3-1.7-.4-1.1.3-2.3 1.5-2.3H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15.5" cy="7.5" r="1.2"/></svg>',
@@ -480,9 +497,11 @@ async function checkRobot(){if(!D.repo)return;
   try{const r=await fetch(`https://api.github.com/repos/${D.repo}/actions/runs?per_page=8`,{cache:"no-store"});if(!r.ok)throw 0;const runs=(await r.json()).workflow_runs||[];
     const now=Date.now(),open=runs.filter(x=>x.status!=="completed"),stuck=open.filter(x=>now-Date.parse(x.created_at)>15*6e4).sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at))[0];
     const lastOk=runs.find(x=>x.conclusion==="success");
-    if(stuck)robot={state:"stuck",run:stuck.html_url,since:stuck.created_at,at:now};
+    let wf=null;try{const w=await (await fetch(`https://api.github.com/repos/${D.repo}/actions/workflows`,{cache:"no-store"})).json();wf=(w.workflows||[]).find(x=>/update\.ya?ml$/.test(x.path))}catch(e){}
+    if(wf&&wf.state&&wf.state!=="active")robot={state:"paused",at:now,run:`https://github.com/${D.repo}/actions`};
+    else if(stuck)robot={state:"stuck",run:stuck.html_url,since:stuck.created_at,at:now};
     else if(open.length)robot={state:"running",at:now};
-    else if(lastOk&&now-Date.parse(lastOk.updated_at)>70*6e4&&isRobotHours())robot={state:"late",since:lastOk.updated_at,at:now,run:`https://github.com/${D.repo}/actions`};
+    else if(lastOk&&now-Date.parse(lastOk.updated_at)>150*6e4&&isRobotHours())robot={state:"late",since:lastOk.updated_at,at:now,run:`https://github.com/${D.repo}/actions`};
     else robot={state:"ok",at:now}}
   catch(e){robot={state:"",at:Date.now()}}
   render()}
@@ -490,13 +509,15 @@ const isRobotHours=()=>{const h=new Date().getUTCHours();return h>=4&&h<=22};
 function statusHtml(){
   if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span>${refreshBtn()}</div>`;
   if(!D.updatedAt)return "";
-  const bad=robot.state==="stuck"||robot.state==="late";
-  const rb=robot.state==="stuck"?` · <b>robot bloqué depuis ${hm(robot.since)}</b> · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le débloquer</a>`
+  const bad=robot.state==="stuck"||robot.state==="late"||robot.state==="paused";
+  const rb=launch.busy||launch.msg?` · ${esc(launch.msg||"robot en cours…")}`
+    :robot.state==="paused"?` · <b>robot mis en pause par GitHub</b>${adm?" · touche ▶ pour le relancer":` · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le réactiver</a>`}`
+    :robot.state==="stuck"?` · <b>robot bloqué depuis ${hm(robot.since)}</b> · ${adm?`<button class="lnk" data-unstick="${esc(robot.run)}">le débloquer</button>`:`<a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le débloquer</a>`}`
     :robot.state==="late"?` · <b>robot en retard</b> (dernier passage ${hm(robot.since)}) · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">voir</a>`
     :robot.state==="running"?" · robot en cours de passage":robot.state==="ok"?" · robot OK":"";
   return `<div class="status ${bad?"err":"ok"}">${bad?I.warn:I.check}<span>Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${rb}</span>${refreshBtn()}</div>`;
 }
-const refreshBtn=()=>`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news">${loading?"…":I.sync}</button>`;
+const refreshBtn=()=>(adm?`<button class="refresh-btn" data-launch="1" aria-label="Lancer le robot" title="Lancer le robot (nouvelles news dans 1 à 2 min)" ${launch.busy?"disabled":""}>${launch.busy?"…":I.play}</button>`:"")+`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news" style="margin-left:${adm?"6px":"auto"}">${loading?"…":I.sync}</button>`;
 function renderTop(){
   const toMark=visibleUnread().length;
   $("allread").title="Tout marquer comme lu";$("journal").title="Journal L'Équipe";
@@ -504,7 +525,7 @@ function renderTop(){
   $("allread").disabled=!toMark;
   $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
   $("allread").innerHTML=`${I.checkAll}<span class="lbl">Tout lu</span>`;
-  $("gear").innerHTML=I.gear;$("gear").setAttribute("aria-pressed",ui.view==="src"||ui.view==="seasons"||ui.view==="look");
+  $("gear").innerHTML=I.gear;$("gear").setAttribute("aria-pressed",ADMV.includes(ui.view));
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(sp.length&&!sp.includes(ui.sport)){ui.sport=sp[0];ui.team="all";saveUi()}
@@ -580,16 +601,11 @@ function renderSources(){
   const T=TEAMS(),sp=sports();
   let h=`<div class="pad"><h2 class="h2">Réglages</h2>`;
   h+=`<div class="sec">Carnet de matchs</div><div class="card"><p class="lead" style="margin:0">Crée, renomme ou clôture tes saisons (foot, basket, baseball, rugby).</p><div class="actions"><button class="btn primary" data-view="seasons">Mes saisons</button><button class="btn" data-view="compare">Comparer les saisons</button></div></div>`;
-  h+=`<div class="sec">Apparence des équipes</div><div class="card">${D.teams.filter(t=>t.chip!==false).map(t=>`<div class="src-row">${crest(t.key)}<div class="src-main"><b>${esc(t.name)}</b><div class="hint"><span class="dot" style="background:${esc(themeOf(t.key).accent)}"></span> ${esc(({logo:"Logo en fond",photo:"Photo en fond",none:"Sans fond"})[themeOf(t.key).mode])}</div></div><button class="btn sm" data-look="${esc(t.key)}">Modifier</button></div>`).join("")}</div>`;
-  h+=`<div class="sec">Sources</div><p class="lead">Mise à jour automatique toutes les 30 min, de 6h à minuit environ. Les articles s'ouvrent sur le site d'origine.</p>`;
-  for(const s of sp){
-    const scopes=["sport:"+s,...teamsOf(s)];
-    const blocks=scopes.map(sc=>{const list=D.sources.filter(x=>x.scope===sc);if(!list.length)return "";
-      const label=sc.startsWith("sport:")?`${aCrest({sport:s})}<span><span class="t">Sites généralistes</span><br><span class="comp">Rangés sous l'équipe concernée</span></span>`:`${crest(sc)}<span class="t">${esc(T[sc]?.name||sc)}</span>`;
-      return `<div class="card"><div class="head" style="margin-bottom:6px">${label}</div>`+list.map(x=>`<div class="src-row"><div class="src-main"><b>${esc(x.name)}</b>${x.keep?` <span class="tag lang">${x.keep==="all"?"toutes les news":"mes équipes"}</span>`:""}<div class="comp">${esc((x.site||"").replace(/^https?:\/\/(www\.)?/,""))}</div>
-        <div class="hint" style="color:${x.status==="ok"?"var(--win)":x.status==="pause"?"var(--muted)":"var(--loss)"}">${x.status==="ok"?`OK · ${x.count} article${x.count>1?"s":""} au dernier passage${x.via?" (via "+esc(x.via)+")":""}`:x.status==="pause"?"En pause":"Erreur : "+esc(x.error||"inconnue")}</div></div></div>`).join("")+`</div>`}).join("");
-    if(blocks)h+=`<div class="sec">${esc(s)}</div>`+blocks;
-  }
+  const nErr=D.sources.filter(x=>x.status==="erreur").length,nPause=D.sources.filter(x=>x.status==="pause").length;
+  h+=`<div class="sec">Robot, sources et équipes</div><div class="card menu">
+   <button class="mrow" data-view="robotcfg"><b>Robot et jeton</b><span class="muted">${adm?"Jeton enregistré · lancer le robot":"Ajoute ton jeton pour lancer le robot et gérer tes sources"}</span></button>
+   <button class="mrow" data-view="srcman"><b>Sources</b><span class="muted">${D.sources.length} sites${nErr?` · <span style="color:var(--loss)">${nErr} en erreur</span>`:""}${nPause?` · ${nPause} en pause`:""}${pend.length?` · <span style="color:var(--warn)">${pend.length} changement(s) à envoyer</span>`:""}</span></button>
+   <button class="mrow" data-view="teamman"><b>Équipes</b><span class="muted">${D.teams.filter(t=>t.chip!==false).length} équipes · ajouter, retirer, apparence (couleur, fond)</span></button></div>`;
   const ds=Object.entries(D.dataStatus||{});
   if(ds.length)h+=`<div class="sec">Résultats et calendriers</div><div class="card">${ds.map(([k,v])=>`<div class="src-row"><div class="src-main"><b>${esc(T[k]?.name||k)}</b><div class="hint" style="color:${v==="ok"?"var(--win)":"var(--loss)"}">${v==="ok"?"OK":esc(v)}</div></div></div>`).join("")}</div>`;
   if((D.exclure||[]).length)h+=`<div class="sec">Mots exclus</div><div class="card"><p class="lead" style="margin:0">Les articles qui contiennent l'un de ces mots sont ignorés : ${D.exclure.map(w=>`<span class="tag lang">${esc(w)}</span>`).join(" ")}</p><p class="hint">Liste « exclure » dans sources.json.</p></div>`;
@@ -617,7 +633,7 @@ function renderSheet(){
    <div class="actions"><button class="btn" id="toggleRead">${isRead(a.id)?"Marquer non lu":"Marquer lu"}</button>${t?`<button class="btn" data-team-open="${esc(a.team)}">Fiche ${esc(t.label||t.name)}</button>`:""}</div>`;
 }
 // ===== Thème par équipe (couleur + logo ou photo en filigrane) =====
-const LOGV=["log","logform","seasons","compare"];
+const LOGV=["log","logform","seasons","compare"],ADMV=["src","look","srcman","teamman","srcform","clubform","robotcfg"];
 const PEOPLE=k=>{const t=TEAMS()[k];return t&&["F1","Cyclisme"].includes(t.sport)};
 function themeOf(k){const t=TEAMS()[k]||{},th=(P.theme||{})[k]||{},def=t.theme||{};
   const accent=th.accent||def.accent||t.c1||"#5b8ff0";
@@ -839,9 +855,164 @@ document.addEventListener("change",e=>{const id=e.target.id;
   if(id==="histSel"){ui.logSeason=e.target.value;render()}
   else if(id==="cmpA"||id==="cmpB"){ui[id]=e.target.value;render()}});
 
+// ===== Jeton du dépôt (robot à la demande + gestion des sources et clubs) =====
+const ADM_KEY="vh-admin";
+let adm=LS(ADM_KEY),admInfo={busy:false,err:"",ok:""};
+let pend=LS("vh-src-pending")||[]; // changements en attente d'envoi : {op, ...}
+const savePend=()=>LS("vh-src-pending",pend);
+async function ghRepo(path,opt={},tok=adm&&adm.token){
+  const r=await fetch(`https://api.github.com/repos/${D.repo}/${path}`,{method:opt.method||"GET",cache:"no-store",headers:{"Authorization":"Bearer "+tok,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},body:opt.body?JSON.stringify(opt.body):undefined});
+  if(!r.ok){let m="";try{m=(await r.json()).message||""}catch(e){}throw new Error(r.status===401?"jeton refusé ou expiré":r.status===403||r.status===404?"jeton sans le droit nécessaire ("+(m||r.status)+")":"GitHub HTTP "+r.status+(m?" · "+m:""))}
+  return r.status===204?{}:r.json()}
+async function wfInfo(tok){const j=await ghRepo("actions/workflows",{},tok);const w=(j.workflows||[]).find(x=>/update\.ya?ml$/.test(x.path))||(j.workflows||[])[0];if(!w)throw new Error("robot introuvable");return w}
+async function admSetup(tok){admInfo={busy:true,err:"",ok:""};render();
+  try{await wfInfo(tok);await ghRepo("contents/sources.json",{},tok);adm={token:tok};LS(ADM_KEY,adm);admInfo={busy:false,err:"",ok:"Jeton accepté : tu peux lancer le robot et gérer tes sources."}}
+  catch(e){admInfo={busy:false,err:e.message,ok:""}}render()}
+// --- Lancer le robot (le réactive s'il a été mis en pause par GitHub) ---
+let launch={busy:false,at:0,msg:""};
+async function launchRobot(){if(!adm||launch.busy)return;launch={busy:true,at:Date.now(),msg:"Lancement…"};render();
+  try{const w=await wfInfo();let re="";
+    if(w.state&&w.state!=="active"){await ghRepo(`actions/workflows/${w.id}/enable`,{method:"PUT"});re=" (il avait été mis en pause par GitHub : réactivé)"}
+    await ghRepo(`actions/workflows/${w.id}/dispatches`,{method:"POST",body:{ref:"main"}});
+    launch.msg="Robot lancé"+re+" · les news arrivent dans 1 à 2 min";robot={state:"running",at:Date.now()};render();
+    const t0=launch.at-60e3;for(let i=0;i<24;i++){await new Promise(r=>setTimeout(r,15e3));
+      try{const runs=(await (await fetch(`https://api.github.com/repos/${D.repo}/actions/runs?per_page=5`,{cache:"no-store"})).json()).workflow_runs||[];
+        const mine=runs.find(x=>x.event==="workflow_dispatch"&&Date.parse(x.created_at)>=t0);
+        if(mine&&mine.status==="completed"){launch={busy:false,at:0,msg:mine.conclusion==="success"?"":"Le passage du robot a échoué"};await new Promise(r=>setTimeout(r,20e3));load(true);return}}catch(e){}}
+    launch={busy:false,at:0,msg:""};load(true)}
+  catch(e){launch={busy:false,at:0,msg:"Erreur : "+e.message};render()}}
+async function unstick(url){const id=(url.match(/runs\/(\d+)/)||[])[1];if(!id||!adm)return;
+  try{await ghRepo(`actions/runs/${id}/cancel`,{method:"POST"});launch.msg="Passage bloqué annulé";robot={state:"",at:0};setTimeout(()=>checkRobot(),4e3)}catch(e){launch.msg="Erreur : "+e.message}render()}
+
+// --- Gestion des sources et clubs ---
+const slug=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,8)||"club";
+const SP_ALL=()=>sports();
+const pendOf=(type,key)=>pend.find(p=>p.op===type&&(p.name===key||p.key===key));
+function hexMix(hex,amt){const n=parseInt(hex.slice(1),16),r=n>>16,g=n>>8&255,b=n&255,m=[7,9,13];return "#"+[r,g,b].map((v,i)=>Math.round(v*amt+m[i]*(1-amt)).toString(16).padStart(2,"0")).join("")}
+function scopeLabel(sc,keep){const T=TEAMS();if(sc.startsWith("sport:"))return `Tout le ${sc.slice(6).toLowerCase()}${keep==="all"?"":" · seulement mes équipes"}`;return "Club : "+(T[sc]?T[sc].label||T[sc].name:sc)}
+function pendingBar(){if(!pend.length)return "";return `<div class="pendbar"><span>${pend.length} changement${pend.length>1?"s":""} à envoyer</span><button class="btn sm" data-pendclear="1">Annuler</button><button class="btn sm primary" data-pendsend="1" ${admInfo.busy?"disabled":""}>${admInfo.busy?"Envoi…":"Envoyer"}</button></div>`}
+const admMsg=()=>admInfo.err?`<p class="hint" style="color:var(--loss)">Erreur : ${esc(admInfo.err)}</p>`:admInfo.ok?`<p class="hint" style="color:var(--win)">${esc(admInfo.ok)}</p>`:"";
+const needTok=()=>adm?admMsg():`<div class="card note2">Pour ajouter, retirer ou mettre en pause, colle d'abord ton jeton du dépôt dans <button class="link" data-view="robotcfg">Réglages › Robot et jeton</button>.</div>`;
+function renderSrcMan(){const sp=SP_ALL(),T=TEAMS();
+  let h=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1;margin:0">Sources</h2><button class="btn sm" data-view="src">Réglages</button></div>
+  <p class="lead">Les articles viennent de ces sites. Mise à jour automatique par le robot.</p>${needTok()}
+  <button class="btn primary wide" data-srcnew="1" ${adm?"":"disabled"}>+ Ajouter une source</button>`;
+  for(const s of sp){const list=D.sources.filter(x=>x.scope==="sport:"+s||(T[x.scope]&&T[x.scope].sport===s));const added=pend.filter(p=>p.op==="addSrc"&&(p.src.scope==="sport:"+s||(T[p.src.scope]&&T[p.src.scope].sport===s)));
+    if(!list.length&&!added.length)continue;
+    h+=`<div class="sec">${esc(s)}</div><div class="card" style="padding:4px 14px">`+list.map(x=>{const del=pendOf("delSrc",x.name),pz=pendOf("pauseSrc",x.name),paused=pz?pz.on===false:x.status==="pause";
+      return `<div class="srow ${del?"gone":""}">${aCrest({team:T[x.scope]?x.scope:null,sport:s,source:x.name})}<div class="m"><b>${esc(x.name)}</b>${del?` <span class="pill warn">À SUPPRIMER</span>`:pz?` <span class="pill warn">${paused?"PAUSE":"REPRISE"}</span>`:""}<div class="muted">${esc(scopeLabel(x.scope,x.keep))}</div><div class="hint" style="margin:0;color:${x.status==="ok"?"var(--win)":x.status==="pause"?"var(--muted)":"var(--loss)"}">${x.status==="ok"?`OK · ${x.count} article${x.count>1?"s":""}${x.via?" (via "+esc(x.via)+")":""}`:x.status==="pause"?"En pause":"Erreur : "+esc(x.error||"inconnue")}</div></div>
+      ${adm?(del?`<button class="sb" data-pendundo="${esc("delSrc|"+x.name)}">Garder</button>`:`<button class="sb" data-srcpause="${esc(x.name)}">${paused?"Reprendre":"Pause"}</button><button class="sb del" data-srcdel="${esc(x.name)}">Suppr.</button>`):""}</div>`}).join("")
+      +added.map(p=>`<div class="srow"><span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">+</span><div class="m"><b>${esc(p.src.name)}</b> <span class="pill warn">AJOUTÉE</span><div class="muted">${esc(scopeLabel(p.src.scope,p.src.keep))}</div><div class="hint" style="margin:0;color:var(--warn)">À envoyer, puis prise en compte au passage suivant du robot</div></div><button class="sb del" data-pendundo="${esc("addSrc|"+p.src.name)}">Annuler</button></div>`).join("")+`</div>`}
+  return h+pendingBar()+`</div>`}
+function renderTeamMan(){const T=TEAMS(),sp=SP_ALL().filter(s=>CS.includes(s)||D.teams.some(t=>t.sport===s&&t.chip!==false));
+  let h=`<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1;margin:0">Équipes</h2><button class="btn sm" data-view="src">Réglages</button></div>${needTok()}
+  <button class="btn primary wide" data-clubnew="1" ${adm?"":"disabled"}>+ Ajouter un club</button>`;
+  for(const s of sp){const list=D.teams.filter(t=>t.sport===s&&t.chip!==false),added=pend.filter(p=>p.op==="addClub"&&p.team.sport===s);if(!list.length&&!added.length)continue;
+    h+=`<div class="sec">${esc(s)}</div><div class="card" style="padding:4px 14px">`+list.map(t=>{const del=pendOf("delClub",t.key),n=D.sources.filter(x=>x.scope===t.key).length,data=!!(D.teamData||{})[t.key];
+      return `<div class="srow ${del?"gone":""}">${crest(t.key)}<div class="m"><b>${esc(t.name)}</b>${del?` <span class="pill warn">À RETIRER</span>`:""}<div class="muted">${n} source${n>1?"s":""} · ${data?"résultats ✓":"news seulement"}</div></div>
+      <button class="sb" data-look="${esc(t.key)}">Apparence</button>${adm?(del?`<button class="sb" data-pendundo="${esc("delClub|"+t.key)}">Garder</button>`:`<button class="sb del" data-clubdel="${esc(t.key)}">Retirer</button>`):""}</div>`}).join("")
+      +added.map(p=>`<div class="srow"><span class="crest" style="--c1:${esc(p.team.c1)};--c2:#fff" aria-hidden="true">${esc(p.team.short)}</span><div class="m"><b>${esc(p.team.name)}</b> <span class="pill warn">AJOUTÉ</span><div class="muted">news seulement${p.src?" · 1 source dédiée":""}</div></div><button class="sb del" data-pendundo="${esc("addClub|"+p.team.key)}">Annuler</button></div>`).join("")+`</div>`}
+  return h+pendingBar()+`</div>`}
+function renderSrcForm(){const d=ui.draft||{},T=TEAMS(),forClub=(d.for||"club")==="club",clubs=D.teams.filter(t=>t.chip!==false);
+  const inp=(k,ph,extra="")=>`<input class="in" data-draft="${k}" placeholder="${esc(ph)}" value="${esc(d[k]??"")}" ${extra}>`;
+  return `<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1;margin:0">Ajouter une source</h2><button class="btn sm" data-view="srcman">Annuler</button></div>
+  <div class="lform"><label>Nom affiché${inp("sname","Ex. Le Progrès · LOU")}</label>
+  <label style="margin-top:10px">Adresse du site ou de son flux RSS${inp("surl","https://…",'inputmode="url" autocapitalize="off"')}</label>
+  <p class="hint">Le robot trouve tout seul le flux si tu colles l'adresse du site.</p></div>
+  <div class="sec">Pour</div><div class="seg"><button data-dfor="club" aria-pressed="${forClub}">Un club</button><button data-dfor="sport" aria-pressed="${!forClub}">Tout un sport</button></div>
+  ${forClub?`<div class="sec">Quel club ?</div><div class="chips">${clubs.map(t=>`<button class="chip pickc" data-dclub="${esc(t.key)}" aria-pressed="${d.club===t.key}">${crest(t.key)}${esc(t.label||t.name)}</button>`).join("")}${pend.filter(p=>p.op==="addClub").map(p=>`<button class="chip pickc" data-dclub="${esc(p.team.key)}" aria-pressed="${d.club===p.team.key}">${esc(p.team.label)}</button>`).join("")}</div>
+   <div class="card tgrow"><div style="flex:1"><b>Garder seulement les articles sur ${esc(d.club?(T[d.club]?T[d.club].label||T[d.club].name:(pend.find(p=>p.team&&p.team.key===d.club)||{team:{}}).team.label):"ce club")}</b><div class="muted">À activer si le site parle aussi d'autres équipes</div></div><button class="tgl" role="switch" data-dflt="1" aria-checked="${!!d.filter}"><span></span></button></div>`
+  :`<div class="sec">Quel sport ?</div><div class="chips">${SP_ALL().map(s=>`<button class="chip" data-dsport="${esc(s)}" aria-pressed="${d.ssport===s}">${esc(s)}</button>`).join("")}</div>
+   <div class="sec">Quels articles ?</div><div class="seg"><button data-dkeep="all" aria-pressed="${(d.keep||"all")==="all"}">Toutes les news</button><button data-dkeep="mine" aria-pressed="${d.keep==="mine"}">Seulement mes équipes</button></div>
+   <p class="hint">« Toutes les news » : tout arrive dans « Tout » du sport, et ce qui parle de tes clubs est aussi rangé sous leur pastille.</p>`}
+  <div class="actions" style="margin:18px 0"><button class="btn primary" data-srcadd="1" style="flex:1">Ajouter</button></div><p class="hint" style="text-align:center">Pense ensuite à « Envoyer » ; prise en compte au passage suivant du robot.</p></div>`}
+function renderClubForm(){const d=ui.draft||{};const inp=(k,ph,extra="")=>`<input class="in" data-draft="${k}" placeholder="${esc(ph)}" value="${esc(d[k]??"")}" ${extra}>`;
+  const kws=d.kws||[];
+  return `<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1;margin:0">Ajouter un club</h2><button class="btn sm" data-view="teamman">Annuler</button></div>
+  <div class="sec">Sport</div><div class="chips">${SP_ALL().filter(s=>!["F1","Cyclisme"].includes(s)).map(s=>`<button class="chip" data-dsport="${esc(s)}" aria-pressed="${d.ssport===s}">${esc(s)}</button>`).join("")}</div>
+  <div class="lform"><div class="frow"><label style="flex:2">Nom complet${inp("cname","Ex. Racing Club de Lens")}</label><label>Nom de la pastille${inp("clabel","Ex. Lens",'maxlength="14"')}</label></div></div>
+  <div class="sec">Mots-clés pour reconnaître ses articles</div><div class="chips">${kws.map((k,i)=>`<button class="chip" data-kwdel="${i}">${esc(k)} ×</button>`).join("")}</div>
+  <div class="frow"><input class="in" id="kwIn" placeholder="Ajouter un mot-clé (ex. Sang et Or)" style="flex:1"><button class="btn" data-kwadd="1">Ajouter</button></div>
+  <p class="hint">Le nom de la pastille et le nom complet sont déjà pris en compte. Ajoute les surnoms, le stade, l'entraîneur…</p>
+  <div class="sec">Logo et couleur</div><div class="row" style="gap:12px"><span class="logo-prev">${d.logo?`<img src="${esc(d.logo)}" alt="">`:`<b style="color:${esc(d.color||"#5b8ff0")}">${esc((d.clabel||"?").slice(0,3).toUpperCase())}</b>`}</span><label class="btn" style="flex:1">Choisir une image…<input type="file" id="clubLogo" accept="image/*" hidden></label><label class="sw pick" style="background:${esc(d.color||"#5b8ff0")}"><input type="color" id="clubColor" value="${esc(d.color||"#5b8ff0")}"></label></div>
+  <div class="card note2" style="margin-top:14px">Ses news arrivent déjà par tes sources générales (ex. L'Équipe) quand un article le cite. Tu peux aussi lui ajouter une source dédiée :</div>
+  <div class="lform"><label>Source dédiée (facultatif) : adresse du site${inp("csrc","https://…",'inputmode="url" autocapitalize="off"')}</label></div>
+  <div class="card note3">Résultats, agenda et classement : pas automatiques pour un club ajouté ici. Demande-les à Claude si tu le suis durablement.</div>
+  <div class="actions" style="margin:18px 0"><button class="btn primary" data-clubadd="1" style="flex:1">Ajouter le club</button></div></div>`}
+function renderRobotCfg(){
+  return `<div class="pad"><div style="display:flex;align-items:center;gap:8px"><h2 class="h2" style="flex:1;margin:0">Robot et jeton</h2><button class="btn sm" data-view="src">Réglages</button></div>
+  <p class="lead">Le robot passe automatiquement toutes les 2 heures. Avec ce jeton, tu peux aussi le lancer quand tu veux, le débloquer, et gérer tes sources et tes clubs depuis l'appli.</p>
+  <div class="card">${adm?`<p class="lead" style="margin:0;color:var(--win)">Jeton enregistré sur cet appareil.</p><div class="actions"><button class="btn primary" data-launch="1" ${launch.busy?"disabled":""}>${launch.busy?"Robot en cours…":"Lancer le robot"}</button><button class="btn" data-admoff="1">Retirer le jeton ici</button></div>`
+   :`<p class="lead" style="margin:0">Colle ici ton jeton GitHub limité au dépôt <b>vestaire</b> (droits Actions et Contents en lecture et écriture). Il reste uniquement sur cet appareil.</p><div class="actions"><input id="admTok" type="password" autocomplete="off" placeholder="github_pat_…" class="in" style="flex:1 1 100%"><button class="btn primary" data-admon="1" ${admInfo.busy?"disabled":""}>${admInfo.busy?"Vérification…":"Enregistrer"}</button></div>`}
+   ${admInfo.err?`<p class="hint" style="color:var(--loss)">Erreur : ${esc(admInfo.err)}</p>`:admInfo.ok?`<p class="hint" style="color:var(--win)">${esc(admInfo.ok)}</p>`:""}${launch.msg?`<p class="hint">${esc(launch.msg)}</p>`:""}</div></div>`}
+// Applique les changements en attente à sources.json et les envoie sur GitHub en un seul enregistrement
+async function sendPending(){if(!adm||!pend.length)return;admInfo={busy:true,err:"",ok:""};render();
+  try{const ref=await ghRepo("git/ref/heads/main"),head=ref.object.sha,cm=await ghRepo("git/commits/"+head);
+    const cur=await ghRepo("contents/sources.json?ref="+head);const cfg=JSON.parse(decodeURIComponent(escape(atob(cur.content.replace(/\n/g,"")))));
+    const files=[],summary=[];
+    for(const p of pend){
+      if(p.op==="addSrc"){if(!cfg.sources.some(s=>s.name===p.src.name)){cfg.sources.push(p.src);summary.push("+ source "+p.src.name)}}
+      else if(p.op==="delSrc"){cfg.sources=cfg.sources.filter(s=>s.name!==p.name);summary.push("- source "+p.name)}
+      else if(p.op==="pauseSrc"){const s=cfg.sources.find(s=>s.name===p.name);if(s){if(p.on===false)s.on=false;else delete s.on;summary.push((p.on===false?"pause ":"reprise ")+p.name)}}
+      else if(p.op==="addClub"){if(!cfg.teams.some(t=>t.key===p.team.key)){cfg.teams.push(p.team);summary.push("+ club "+p.team.name)}
+        if(p.src&&!cfg.sources.some(s=>s.name===p.src.name))cfg.sources.push(p.src);
+        if(p.logo)files.push({path:`site/logos/${p.team.key}.png`,b64:p.logo.split(",")[1]});if(p.wm)files.push({path:`site/logos/wm-${p.team.key}.png`,b64:p.wm.split(",")[1]})}
+      else if(p.op==="delClub"){cfg.teams=cfg.teams.filter(t=>t.key!==p.key);cfg.sources=cfg.sources.filter(s=>s.scope!==p.key);summary.push("- club "+p.key)}}
+    const json=JSON.stringify(cfg,null,2)+"\n";files.push({path:"sources.json",b64:btoa(unescape(encodeURIComponent(json)))});
+    const tree=[];for(const f of files){const bl=await ghRepo("git/blobs",{method:"POST",body:{content:f.b64,encoding:"base64"}});tree.push({path:f.path,mode:"100644",type:"blob",sha:bl.sha})}
+    const tr=await ghRepo("git/trees",{method:"POST",body:{base_tree:cm.tree.sha,tree}});
+    const nc=await ghRepo("git/commits",{method:"POST",body:{message:"Appli : "+summary.join(", ").slice(0,200),tree:tr.sha,parents:[head]}});
+    await ghRepo("git/refs/heads/main",{method:"PATCH",body:{sha:nc.sha}});
+    pend=[];savePend();admInfo={busy:false,err:"",ok:"Envoyé ! Le robot repart tout seul ; les changements apparaissent dans 1 à 2 min."};robot={state:"running",at:Date.now()};setTimeout(()=>load(true),150e3)}
+  catch(e){admInfo={busy:false,err:e.message,ok:""}}render()}
+function loadClubLogo(file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{
+  const c=document.createElement("canvas");c.width=c.height=256;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,256,256);const s=184/Math.max(im.width,im.height);x.drawImage(im,(256-im.width*s)/2,(256-im.height*s)/2,im.width*s,im.height*s);
+  const w=document.createElement("canvas");w.width=w.height=300;const y=w.getContext("2d");const s2=300/Math.max(im.width,im.height);y.drawImage(im,(300-im.width*s2)/2,(300-im.height*s2)/2,im.width*s2,im.height*s2);
+  ui.draft={...(ui.draft||{}),logo:c.toDataURL("image/png"),wm:w.toDataURL("image/png")};render()};im.src=fr.result};fr.readAsDataURL(file)}
+function admClick(b,d){
+  if(d.admon){const v=($("admTok")?.value||"").trim();if(v)admSetup(v);return true}
+  if(d.admoff){if(!confirm("Retirer le jeton de cet appareil ?"))return true;adm=null;try{localStorage.removeItem(ADM_KEY)}catch(e){}}
+  else if(d.launch){launchRobot();return true}
+  else if(d.unstick){unstick(d.unstick);return true}
+  else if(d.srcnew){ui.draft={for:"club"};ui.view="srcform";$("screen").scrollTop=0}
+  else if(d.clubnew){ui.draft={kws:[],color:"#5b8ff0"};ui.view="clubform";$("screen").scrollTop=0}
+  else if(d.dfor){ui.draft={...(ui.draft||{}),for:d.dfor}}
+  else if(d.dclub){ui.draft={...(ui.draft||{}),club:d.dclub}}
+  else if(d.dsport){ui.draft={...(ui.draft||{}),ssport:d.dsport}}
+  else if(d.dkeep){ui.draft={...(ui.draft||{}),keep:d.dkeep}}
+  else if(d.dflt){ui.draft={...(ui.draft||{}),filter:!(ui.draft||{}).filter}}
+  else if(d.kwadd){const v=($("kwIn")?.value||"").trim();if(v)ui.draft={...(ui.draft||{}),kws:[...((ui.draft||{}).kws||[]),v]}}
+  else if(d.kwdel!==undefined){const k=[...((ui.draft||{}).kws||[])];k.splice(+d.kwdel,1);ui.draft={...ui.draft,kws:k}}
+  else if(d.srcadd){const x=ui.draft||{},name=(x.sname||"").trim(),url=(x.surl||"").trim();
+    if(!name||!/^https?:\/\//.test(url)){alert("Indique un nom et une adresse qui commence par https://");return true}
+    const forClub=(x.for||"club")==="club";if(forClub&&!x.club){alert("Choisis le club.");return true}if(!forClub&&!x.ssport){alert("Choisis le sport.");return true}
+    if(D.sources.some(s=>s.name===name)||pend.some(p=>p.src&&p.src.name===name)){alert("Une source porte déjà ce nom.");return true}
+    const isFeed=/(rss|feed|atom|\.xml)(\b|$)/i.test(url),src={name,scope:forClub?x.club:"sport:"+x.ssport,site:url,feeds:isFeed?[url]:[]};
+    if(forClub&&x.filter)src.filter=true;if(!forClub)src.keep=x.keep||"all";
+    pend.push({op:"addSrc",src});savePend();ui.draft=null;ui.view="srcman";$("screen").scrollTop=0}
+  else if(d.srcdel){if(!confirm("Supprimer la source « "+d.srcdel+" » ?"))return true;pend=pend.filter(p=>!(p.op==="pauseSrc"&&p.name===d.srcdel));pend.push({op:"delSrc",name:d.srcdel});savePend()}
+  else if(d.srcpause){const s=D.sources.find(x=>x.name===d.srcpause),ex=pendOf("pauseSrc",d.srcpause);if(ex){pend=pend.filter(p=>p!==ex)}else pend.push({op:"pauseSrc",name:d.srcpause,on:s&&s.status==="pause"?true:false});savePend()}
+  else if(d.clubdel){const t=TEAMS()[d.clubdel];if(!confirm(`Retirer ${t?t.name:d.clubdel} et ses sources dédiées ?`))return true;pend.push({op:"delClub",key:d.clubdel});savePend()}
+  else if(d.pendundo){const [op,k]=d.pendundo.split("|");pend=pend.filter(p=>!(p.op===op&&(p.name===k||p.key===k||(p.src&&p.src.name===k&&op==="addSrc")||(p.team&&p.team.key===k))));savePend()}
+  else if(d.pendclear){if(!confirm("Annuler tous les changements non envoyés ?"))return true;pend=[];savePend()}
+  else if(d.pendsend){sendPending();return true}
+  else if(d.clubadd){const x=ui.draft||{},name=(x.cname||"").trim(),label=(x.clabel||"").trim();
+    if(!x.ssport||!name||!label){alert("Indique le sport, le nom complet et le nom de la pastille.");return true}
+    let key=slug(label);const used=new Set([...D.teams.map(t=>t.key),...pend.filter(p=>p.team).map(p=>p.team.key)]);let k2=key,i=2;while(used.has(k2))k2=key.slice(0,6)+i++;key=k2;
+    const color=x.color||"#5b8ff0",kw=[...new Set([label,name,...(x.kws||[])])];
+    const team={key,name,label,short:label.replace(/[^A-Za-zÀ-ÿ0-9]/g,"").slice(0,3).toUpperCase()||"???",sport:x.ssport,comp:"",theme:{accent:color,bar:hexMix(color,.16)},c1:color,c2:"#ffffff",keywords:kw};
+    const src=(x.csrc||"").trim();const ps={op:"addClub",team};
+    if(/^https?:\/\//.test(src))ps.src={name:"Site · "+label,scope:key,filter:true,site:src,feeds:/(rss|feed|atom|\.xml)(\b|$)/i.test(src)?[src]:[]};
+    if(x.logo){ps.logo=x.logo;ps.wm=x.wm}
+    pend.push(ps);savePend();ui.draft=null;ui.view="teamman";$("screen").scrollTop=0}
+  else return false;
+  render();return true}
+document.addEventListener("change",e=>{if(e.target.id==="clubLogo"&&e.target.files[0])loadClubLogo(e.target.files[0]);else if(e.target.id==="clubColor"){ui.draft={...(ui.draft||{}),color:e.target.value};render()}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="kwIn"){e.preventDefault();document.querySelector('[data-kwadd]')?.click()}});
+
 function render(){renderTop();const v=ui.view;
-  $("app").classList.toggle("notabs",LOGV.includes(v)||v==="look"||v==="src");
-  $("screen").innerHTML=v==="saved"?renderSaved():v==="cal"?renderCal():v==="teams"?renderTeams():v==="src"?renderSources():v==="log"?renderLog():v==="logform"?renderLogForm():v==="seasons"?renderSeasons():v==="compare"?renderCompare():v==="look"?renderLook():renderInbox();
+  $("app").classList.toggle("notabs",LOGV.includes(v)||ADMV.includes(v));
+  $("screen").innerHTML=v==="srcman"?renderSrcMan():v==="teamman"?renderTeamMan():v==="srcform"?renderSrcForm():v==="clubform"?renderClubForm():v==="robotcfg"?renderRobotCfg():v==="saved"?renderSaved():v==="cal"?renderCal():v==="teams"?renderTeams():v==="src"?renderSources():v==="log"?renderLog():v==="logform"?renderLogForm():v==="seasons"?renderSeasons():v==="compare"?renderCompare():v==="look"?renderLook():renderInbox();
   renderSheet();applyTheme()}
 
 document.addEventListener("click",e=>{
@@ -850,6 +1021,7 @@ document.addEventListener("click",e=>{
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
   if(d.syncNow){sync();return}
   if(d.syncOff){syncCfg=null;try{localStorage.removeItem(SYNC_KEY)}catch(e){}render();return}
+  if(admClick(b,d))return;
   if(logClick(b,d))return;
   if(d.view){ui.view=d.view;ui.open=null;$("screen").scrollTop=0;saveUi()}
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
@@ -873,10 +1045,11 @@ document.addEventListener("click",e=>{
   render();
 });
 async function load(manual){
-  loading=true;render();if(manual||!robot.at||Date.now()-robot.at>5*6e4)checkRobot();
+  loading=true;render();const chk=manual||!robot.at||Date.now()-robot.at>5*6e4;
   try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);D=await r.json();loaded=true;loadErr=null;LS("vh-cache",D)}
   catch(err){loadErr=err.message;const c=LS("vh-cache");if(c&&!loaded){D=c;loaded=true}}
   loading=false;render();
+  if(chk)checkRobot();
   if(loaded)sync();
 }
 const cached=LS("vh-cache");if(cached){D=cached;loaded=true}
