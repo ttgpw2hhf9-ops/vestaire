@@ -75,6 +75,8 @@ function matches(team, text) {
     return new RegExp(`(^|[^a-z0-9])${norm(k).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`).test(norm(text));
   });
 }
+// Mots à écarter pour une équipe ("exclude" dans sources.json, ex. XV de France sans le rugby féminin)
+const shunned = (team, text) => !!(team && team.exclude && team.exclude.length && matches({ keywords: team.exclude }, text));
 // Catégorie devinée sur le TITRE seulement (le résumé donnait trop de faux positifs : « combat », « s'offre »…)
 const W = s => new RegExp(`(^|[^a-z])(${s})([^a-z]|$)`);
 const RE_MERC = W("mercato|transferts?|recrues?|recrute|recrutement|s'engage|signe (a|au|chez|pour|jusqu|un contrat|avec)|prolonge|prolongation|contrat|rumeurs?|trade|echange avec|free agent|agent libre|arbitrage salarial|pret|prete|joker medical|libere|quitte|depart (de|du) .* vers|arrive (a|au|chez)");
@@ -134,12 +136,13 @@ for (const src of cfg.sources) {
     let team = null, sport = null;
     if (src.scope.startsWith("sport:")) {
       sport = src.scope.slice(6);
-      const hit = teams.find(t => t.sport === sport && matches(t, text));
+      const hit = teams.find(t => t.sport === sport && matches(t, text) && !shunned(t, text));
       if (hit) team = hit.key; else if (src.keep !== "all") continue;
     } else {
       const t = teamByKey[src.scope]; if (!t) continue;
       if ((src.filter || (fellBack && src.filterIfFallback)) && !matches(t, text)) continue;
       if (src.exclude && matches({ keywords: src.exclude }, text)) continue; // mots à écarter pour ce site (ex. hockey)
+      if (shunned(t, text)) continue;
       team = t.key; sport = t.sport;
     }
     // Date dans le futur (ex. TrashTalk publie avec une heure en avance) : ramenée à l'heure de récupération
@@ -240,6 +243,7 @@ async function tsdb(t) {
   }
   let standings = null, tableCache;
   if (t.data.table) try { const lt = await leagueTable(t); standings = lt.standings; tableCache = lt.cache; add(lt.events); ok++; } catch {}
+  if (t.data.lnr) try { const s = await lnrStandings(t); if (s) { standings = s; ok++; } } catch {}
   if (!ok) throw new Error("TheSportsDB injoignable");
   const next = [], last = [];
   for (const e of evs.values()) {
@@ -253,6 +257,27 @@ async function tsdb(t) {
     } else if (Date.parse(g.date) > now - 3 * 36e5) next.push(g);
   }
   return { next, last, standings, tableCache };
+}
+// Classement officiel du Top 14 lu sur le site de la Ligue (les points de bonus ne se déduisent pas des scores).
+// "lnr" dans sources.json = nom du club dans les adresses du site (toulouse, lyon…). Une seule lecture par passage.
+function parseLnr(html) {
+  const rows = [];
+  for (const seg of html.split("table-line--ranking-scrollable").slice(1)) {
+    const c = seg.match(/\/club\/([a-z0-9-]+)"[^>]*>\s*([^<]+?)\s*<\/a>/); if (!c) continue;
+    const nums = [...seg.slice(0, seg.search(/cell-wrapper--history|$/)).matchAll(/<div class="[^"]*">\s*([+-]?\d+)\s*<\/div>/g)].map(m => m[1]);
+    if (nums.length < 5) continue; // colonnes : Pts, M, G, N, P, Bonus, Pts M., Pts E., Diff
+    const name = c[2].replace(/&amp;/g, "&").replace(/&#0?39;|&apos;|&rsquo;/g, "'").replace(/&quot;/g, '"');
+    rows.push({ rank: rows.length + 1, slug: c[1], name, pts: +nums[0] });
+  }
+  const j = (html.match(/<title>[^<]*\|\s*J(\d+)\s*\|/) || [])[1];
+  return { round: j ? +j : null, rows };
+}
+let lnrPage;
+async function lnrStandings(t) {
+  lnrPage = lnrPage || get("https://top14.lnr.fr/classement").then(parseLnr).catch(() => null);
+  const p = await lnrPage;
+  if (!p || p.rows.length < 10 || !p.rows.some(r => r.slug === t.data.lnr)) return null;
+  return { title: p.round ? `Top 14 · après la journée ${p.round}` : "Top 14", unit: "pts", rows: p.rows.map(r => ({ rank: r.rank, name: r.name, val: String(r.pts), me: r.slug === t.data.lnr })) };
 }
 // Classement Betclic Élite recalculé à partir des résultats journée par journée (TheSportsDB, gratuit).
 // Les journées terminées sont gardées dans data.json : seules les journées en cours / nouvelles sont relues.
@@ -442,7 +467,8 @@ for (const [k, d] of Object.entries(teamData)) {
 const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
-for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a : { ...a, cat: category(a.title) });
+for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a
+  : { ...a, cat: category(a.title), ...(shunned(teamByKey[a.team], a.title + " " + (a.summary || "")) ? { team: null } : {}) }); // article déjà publié : perd l'étiquette de l'équipe, reste dans le sport
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));
 for (const f of fresh) {
   const { firstSeen, ...a } = f, old = byId.get(a.id);
@@ -466,7 +492,7 @@ const articles = sorted.filter(a => keep.has(a));
 
 const out = {
   updatedAt: new Date().toISOString(),
-  teams: teams.map(({ keywords, data, ...t }) => t),
+  teams: teams.map(({ keywords, exclude, data, ...t }) => t),
   articles, teamData,
   sources: sourceStatus, dataStatus,
   repo: repo || null,
