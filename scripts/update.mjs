@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 
 const cfg = JSON.parse(await fs.readFile("sources.json", "utf8"));
 const OUT = process.env.OUT || "site/data.json";
-const KEEP_DAYS = 14, MAX_ARTICLES = 500;
+const KEEP_DAYS = 14, MAX_ARTICLES = 500, PER_TEAM = 5;
 const UA = "Mozilla/5.0 (compatible; VestiaireHub/1.0; lecteur RSS personnel)";
 const now = Date.now();
 const DAY = 864e5;
@@ -452,13 +452,17 @@ for (const f of fresh) {
 }
 for (const [k, a] of byId) if (Date.parse(a.publishedAt) > Date.now() && a.source !== "Agenda") byId.set(k, { ...a, publishedAt: new Date().toISOString() });
 const seenTitles = new Set();
-const articles = [...byId.values()]
+const sorted = [...byId.values()]
   .filter(a => teams.some(t => t.key === a.team) || (!a.team && a.sport))
   .filter(a => a.source === "Résultats" || a.source === "Agenda" || (goodTitle(a.title, a.source) && !excluded(a.title + " " + (a.summary || ""))))
   .filter(a => now - Date.parse(a.publishedAt) <= KEEP_DAYS * DAY)
   .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
-  .filter(a => { const k = norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60); if (seenTitles.has(k)) return false; seenTitles.add(k); return true; })
-  .slice(0, MAX_ARTICLES);
+  .filter(a => { const k = norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60); if (seenTitles.has(k)) return false; seenTitles.add(k); return true; });
+// Plafond global, mais chaque équipe garde ses PER_TEAM articles les plus récents (clubs peu couverts : Red Star, Servette…)
+const keep = new Set(), perTeam = {};
+for (const a of sorted) if (a.team && a.source !== "Résultats" && a.source !== "Agenda" && (perTeam[a.team] = (perTeam[a.team] || 0) + 1) <= PER_TEAM) keep.add(a);
+for (const a of sorted) { if (keep.size >= MAX_ARTICLES) break; keep.add(a); }
+const articles = sorted.filter(a => keep.has(a));
 
 const out = {
   updatedAt: new Date().toISOString(),

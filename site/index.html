@@ -92,6 +92,9 @@ a.spoil{text-decoration:none}
 .msg{display:grid;grid-template-columns:30px 1fr auto;gap:2px 12px;align-items:start;width:100%;text-align:left;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:relative;min-height:64px}
 .msg::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c1)}
 .msg:active{background:var(--panel-2)}
+.msg{touch-action:pan-y}
+.swipe-bg{position:fixed;z-index:5;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;overflow:hidden;white-space:nowrap;font-weight:600;font-size:14px;background:color-mix(in srgb,var(--accent) 35%,var(--bg));color:var(--fg);pointer-events:none}
+.swipe-bg.go{background:var(--accent);color:var(--accent-ink)}
 .msg .body{min-width:0}
 .msg .from{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .msg .subj{display:block;margin-top:2px;font-weight:500;line-height:1.3}
@@ -695,6 +698,20 @@ function renderLook(){
   ${P.theme[k]&&Object.keys(P.theme[k]).some(x=>x!=="t"&&x!=="pt")?`<div class="actions" style="margin-top:16px"><button class="btn" data-lookreset="1" style="flex:1">Remettre par défaut (couleur et logo du club)</button></div>`:""}</div>`}
 // Glisser l'image dans l'aperçu
 let drag=null;
+// ===== Balayage vers la gauche sur une news : marquer lu (tous sports, toutes listes) =====
+let sw=null,swAt=0;const SW_MIN=80;
+function swBack(){if(!sw)return;const el=sw.el;if(sw.bg)sw.bg.remove();if(sw.lock){el.style.transition="transform .18s ease";el.style.transform="";setTimeout(()=>{el.style.transition=""},200)}sw=null}
+document.addEventListener("touchstart",e=>{if(sw)swBack();if(e.touches.length!==1)return;const el=e.target.closest(".msg.unread");if(!el)return;const t=e.touches[0];sw={el,x:t.clientX,y:t.clientY,dx:0,lock:0,bg:null}},{passive:true});
+document.addEventListener("touchmove",e=>{if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
+  if(!sw.lock){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(dx>0||Math.abs(dy)>=Math.abs(dx)){sw=null;return}
+    sw.lock=1;sw.bg=document.createElement("div");sw.bg.className="swipe-bg";sw.bg.textContent="\u2713 Lu";document.body.appendChild(sw.bg)}
+  e.preventDefault();sw.dx=Math.min(0,dx);const r0=sw.el.getBoundingClientRect(),w=-sw.dx;sw.el.style.transform=`translateX(${sw.dx}px)`;
+  const right=r0.left-(parseFloat(sw.el.dataset.swx)||0)+r0.width;sw.el.dataset.swx=sw.dx;
+  Object.assign(sw.bg.style,{top:r0.top+"px",height:r0.height+"px",left:(right-w)+"px",width:w+"px"});sw.bg.classList.toggle("go",w>=SW_MIN)},{passive:false});
+document.addEventListener("touchend",()=>{if(!sw)return;if(!sw.lock){sw=null;return}swAt=Date.now();const ok=-sw.dx>=SW_MIN,id=sw.el.dataset.msg;delete sw.el.dataset.swx;
+  if(ok){sw.bg.remove();sw=null;if(!isRead(id)){P.read.push(id);saveP()}render()}else swBack()});
+document.addEventListener("touchcancel",()=>{if(sw){delete sw.el.dataset.swx;swBack()}});
+document.addEventListener("click",e=>{if(Date.now()-swAt<400){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("pointerdown",e=>{const c=e.target.closest("#crop");if(!c)return;const th=themeOf(ui.lookKey);drag={x:e.clientX,y:e.clientY,dx:th.dx,dy:th.dy,W:c.clientWidth,H:c.clientHeight};c.setPointerCapture(e.pointerId);e.preventDefault()});
 document.addEventListener("pointermove",e=>{if(!drag)return;const k=ui.lookKey,th=themeOf(k);th.dx=drag.dx+(e.clientX-drag.x)/drag.W;th.dy=drag.dy+(e.clientY-drag.y)/drag.H;drag.cur=th;const im=$("cropImg");if(im)im.style.cssText=wmStyle(k,{...th,op:Math.max(th.op,.35)},drag.W,drag.H)});
 document.addEventListener("pointerup",()=>{if(!drag)return;const c=drag.cur;drag=null;if(c){setTheme(ui.lookKey,{dx:+c.dx.toFixed(3),dy:+c.dy.toFixed(3)});render()}});
