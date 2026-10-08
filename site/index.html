@@ -239,7 +239,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
   .sheet-body{padding:28px 40px 48px}
   .sheet .sheet-body>*{max-width:760px;margin-left:auto!important;margin-right:auto!important}
   .sheet h2{font-size:38px}
-  .sheet-body img{max-height:420px!important}
+  .sheet-body img{max-height:420px!important;display:block}
   .screen{border-right:0}
 }
 
@@ -280,6 +280,7 @@ label.btn{display:flex;align-items:center;justify-content:center;flex:1;cursor:p
 .tile b{display:block;font:700 26px/1.1 var(--f-display)}.tile span{display:block;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .muted{color:var(--muted);font-size:13px}
 .log-row{display:block;width:calc(100% - 32px);margin:0 16px 10px;text-align:left;padding:12px}
+.logq{margin-top:10px;border-radius:21px;padding:0 14px}
 .log-row .row{display:flex;align-items:center;gap:10px}
 .log-row .lmain{flex:1;min-width:0}
 .scol{width:84px;flex:none;text-align:center}
@@ -693,6 +694,7 @@ document.addEventListener("pointermove",e=>{if(!drag)return;const k=ui.lookKey,t
 document.addEventListener("pointerup",()=>{if(!drag)return;const c=drag.cur;drag=null;if(c){setTheme(ui.lookKey,{dx:+c.dx.toFixed(3),dy:+c.dy.toFixed(3)});render()}});
 document.addEventListener("input",e=>{const id=e.target.id,k=ui.lookKey;
   if(id==="zoomR"||id==="opR"){const th={...themeOf(k),[id==="zoomR"?"z":"op"]:+e.target.value};const im=$("cropImg"),c=$("crop");if(im&&c)im.style.cssText=wmStyle(k,{...th,op:Math.max(th.op,.35)},c.clientWidth,c.clientHeight);if(id==="opR"&&im)im.style.opacity=Math.min(1,th.op*2.2)}
+  if(id==="logQ"){ui.logQ=e.target.value;const l=$("logList");if(l)l.innerHTML=logListHtml(logCur)}
   if(e.target.dataset.draft!==undefined){ui.draft=ui.draft||{};ui.draft[e.target.dataset.draft]=e.target.value}});
 document.addEventListener("change",e=>{const id=e.target.id,k=ui.lookKey;
   if(id==="zoomR"){setTheme(k,{z:+e.target.value});render()}
@@ -732,6 +734,15 @@ function stats(list){const o={n:list.length,avg:0,stade:0,tele:0,W:0,D:0,L:0,bes
 const bil=(x,sp)=>sp==="Foot"||sp==="Rugby"||sp===undefined?`${x.W}-${x.D}-${x.L}`:`${x.W}-${x.L}`;
 const title=e=>`${e.home||"?"} ${e.hs!==""&&e.hs!=null?e.hs+"-"+e.as:"–"} ${e.away||"?"}`;
 function entryCard(e){const r=resultOf(e);return `<button class="card log-row" data-logedit="${esc(e.id)}"><div class="row">${e.team?crest(e.team):`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${CSI[e.sport]||"★"}</span>`}<div class="lmain"><b>${esc(title(e))}</b>${r?` <b style="color:${RL[r][1]}">${RL[r][0]}</b>`:""}<div class="muted">${esc(fdate(e.date))}${e.comp?" · "+esc(e.comp):""} · ${e.how==="stade"?"Au stade":"Télé"}</div></div><span class="scol">${stars(e.rating)}</span></div>${e.note?`<div class="muted quote">« ${esc(e.note.length>90?e.note.slice(0,88)+"…":e.note)} »</div>`:""}</button>`}
+// Recherche par équipe : mon équipe ou l'adversaire, sans majuscules ni accents
+const nrm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+let logCur=[];
+function logListHtml(list){const srt=ui.logSort==="note"?"note":"date",q=nrm(ui.logQ),T=TEAMS();let h="";
+  if(q){list=list.filter(e=>{const t=T[e.team];return nrm([e.home,e.away,t&&t.name,t&&t.label].join(" ")).includes(q)});
+    const lab=esc((ui.logQ||"").trim());h+=`<p class="muted" style="margin:0 16px 10px">${list.length?`${list.length} match${list.length>1?"s":""} avec « ${lab} »`:`Aucun match avec « ${lab} ».`}</p>`}
+  list=list.slice().sort(srt==="note"?(a,b)=>(b.rating||0)-(a.rating||0)||b.date.localeCompare(a.date):(a,b)=>b.date.localeCompare(a.date)||(b.t||0)-(a.t||0));
+  let last="";for(const e of list){const m=srt==="date"?new Date(e.date+"T12:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"}):"";if(m&&m!==last){h+=`<div class="day">${esc(m)}</div>`;last=m}h+=entryCard(e)}
+  return h}
 function renderLog(){ensureSeasons();
   const hist=ui.logSeason&&P.seasons[ui.logSeason]?P.seasons[ui.logSeason]:null;
   let list=entries().filter(e=>hist?inSeason(e,hist.id):isCurrent(e));
@@ -742,18 +753,10 @@ function renderLog(){ensureSeasons();
   <p class="hint" style="margin:6px 0 0">${hist?`Saison clôturée · ${CSI[hist.sport]} ${esc(hist.sport)} ${esc(hist.name)}`:CS.map(sp=>{const c=currentSeason(sp);return `${CSI[sp]} ${sp} ${c?esc(c.name):"—"}`}).join(" · ")}</p>
   <div class="tiles">${[["all","matchs",st.n]].concat((hist?[hist.sport]:CS).map(sp=>[sp,CSI[sp]+" "+sp,st.bySport[sp]||0])).map(([k,l,v])=>`<button class="tile" ${hist?"":`data-logsport="${k}"`} aria-pressed="${!hist&&fs===k}"><b>${v}</b><span>${l}</span></button>`).join("")}</div>
   <p class="muted" style="margin:8px 0 0">${st.n?`${fs!=="all"&&!hist?esc(fs)+" : ":""}★ ${fmtN(stF.avg)} de moyenne · ${stF.stade} au stade · ${stF.tele} à la télé · bilan de tes équipes : ${stF.W} V · ${stF.D} N · ${stF.L} D`:"Aucun match noté pour l'instant. Touche « + Ajouter un match » après avoir regardé un match."}</p>
-  <div class="chips" style="margin-top:12px">${[["date","Récents"],["note","Mieux notés"],["team","Par équipe"]].map(([k,l])=>`<button class="chip" data-logsort="${k}" aria-pressed="${(ui.logSort||"date")===k}">${l}</button>`).join("")}</div></div>`;
+  <div class="chips" style="margin-top:12px">${[["date","Récents"],["note","Mieux notés"]].map(([k,l])=>`<button class="chip" data-logsort="${k}" aria-pressed="${(ui.logSort==="note"?"note":"date")===k}">${l}</button>`).join("")}</div>
+  <input class="in logq" id="logQ" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher une équipe…" aria-label="Rechercher une équipe" value="${esc(ui.logQ||"")}"></div>`;
   if(fs!=="all"&&!hist)list=list.filter(e=>e.sport===fs);
-  const srt=ui.logSort||"date";
-  if(srt==="team"){const s2=stats(list),T=TEAMS(),rows=Object.entries(s2.teams).sort((a,b)=>b[1].n-a[1].n);
-    h+=`<div class="sec" style="margin:8px 16px">Mes équipes vues</div><div class="card" style="margin:0 16px 12px;padding:0"><table class="tt"><thead><tr><th></th><th>Équipe</th><th>Vus</th><th>Bilan</th><th>Note</th></tr></thead><tbody>${rows.map(([k,x])=>`<tr><td>${crest(k)}</td><td><b>${esc(T[k]?T[k].label||T[k].name:k)}</b></td><td>${x.n}</td><td>${bil(x,T[k]&&T[k].sport)}</td><td class="gold">${x.nr?fmtN(x.sum/x.nr):"–"}</td></tr>`).join("")||`<tr><td colspan="5" class="muted">Aucun match.</td></tr>`}</tbody></table></div>`;
-    const opp=Object.entries(s2.opp).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>1).slice(0,6);
-    if(opp.length)h+=`<div class="sec" style="margin:8px 16px">Adversaires les plus vus</div><div class="card muted" style="margin:0 16px 12px">${opp.map(([n,c])=>`${esc(n)} ×${c}`).join(" · ")}</div>`;
-    if(s2.best)h+=`<div class="sec" style="margin:8px 16px">Records</div><div class="card" style="margin:0 16px 12px">Meilleur match : <b>${esc(title(s2.best))}</b> ${stars(s2.best.rating)}<br><span class="muted">Au stade : ${s2.stade} match${s2.stade>1?"s":""}</span></div>`;
-  }else{
-    list.sort(srt==="note"?(a,b)=>(b.rating||0)-(a.rating||0)||b.date.localeCompare(a.date):(a,b)=>b.date.localeCompare(a.date)||(b.t||0)-(a.t||0));
-    let last="";for(const e of list){const m=srt==="date"?new Date(e.date+"T12:00:00").toLocaleDateString("fr-FR",{month:"long",year:"numeric"}):"";if(m&&m!==last){h+=`<div class="day">${esc(m)}</div>`;last=m}h+=entryCard(e)}
-  }
+  logCur=list;h+=`<div id="logList">${logListHtml(list)}</div>`;
   return h+`<button class="fab" data-lognew="1">+ Ajouter un match</button>`}
 
 // --- Formulaire ajouter / modifier ---
