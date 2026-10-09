@@ -512,6 +512,7 @@ const parisOffset = Math.round((new Date(new Date(now).toLocaleString("en-US", {
 const parisNow = new Date(now + parisOffset); // à lire avec getUTC*
 
 // NBA · résultats de la nuit : une fiche quand TOUS les matchs de la veille (date de New York) sont terminés. Scores dans "games", jamais dans le titre.
+// Chaque match garde son identifiant ESPN ("id") : l'appli en fait un lien vers le boxscore.
 if (fiches.nba && teams.some(t => t.sport === "Basket")) {
   const day = nyDay(now - DAY), id = `nba-${day}`;
   if (!prevIds.has(id)) try {
@@ -523,7 +524,7 @@ if (fiches.nba && teams.some(t => t.sport === "Basket")) {
         const c = e.competitions?.[0]?.competitors || [], h = c.find(x => x.homeAway === "home") || c[0], a = c.find(x => x.homeAway === "away") || c[1];
         const nm = x => x.team?.shortDisplayName || x.team?.displayName || x.team?.abbreviation || "?";
         const mh = mineOf(h.team?.abbreviation), ma = mineOf(a.team?.abbreviation);
-        return { home: nm(h), away: nm(a), hs: String(h.score ?? ""), as: String(a.score ?? ""), ...((e.status?.period || 0) > 4 ? { ot: true } : {}), ...(mh || ma ? { mine: mh || ma, mineHome: !!mh } : {}) };
+        return { ...(/^\d+$/.test(String(e.id || "")) ? { id: String(e.id) } : {}), home: nm(h), away: nm(a), hs: String(h.score ?? ""), as: String(a.score ?? ""), ...((e.status?.period || 0) > 4 ? { ot: true } : {}), ...(mh || ma ? { mine: mh || ma, mineHome: !!mh } : {}) };
       });
       const slug = evs[0].season?.slug || "", sub = slug === "preseason" ? "Présaison" : slug === "regular-season" ? "Saison régulière" : /post|play/.test(slug) ? "Playoffs" : "NBA";
       const next = nyDay(Date.parse(day + "T12:00:00Z") + DAY), mine = games.filter(g => g.mine);

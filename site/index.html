@@ -131,6 +131,9 @@ a.spoil{text-decoration:none}
 .fixture .mid{font-family:var(--f-display);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
 .gl{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);color:var(--muted)}
 .gl:first-of-type{border-top:0}
+a.gl.lk{grid-template-columns:1fr auto 1fr 12px;text-decoration:none;min-height:44px;-webkit-tap-highlight-color:transparent}
+a.gl.lk:active{background:rgba(127,127,127,.12)}
+.gl .go{font-size:18px;line-height:1;color:var(--muted);text-align:right}
 .gl .w{color:var(--fg);font-weight:700}.gl .r{text-align:right}
 .gl .sc{font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center}
 .gl .sc b{font-weight:500}.gl .sc small{font-family:var(--f-mono);font-size:10px;margin-left:5px}
@@ -673,8 +676,9 @@ function fixtureCard(f){const T=TEAMS(),side=x=>T[x]?`${crest(x)}<span>${esc(T[x
   return `<div class="card"><h4>${esc(f.comp||"Match")}</h4><div class="fixture"><div class="side">${side(f.home)}</div><div class="mid">${f.score?esc(f.score):"vs"}<small>${f.date?esc(dayLabel(f.date))+" · "+hm(f.date):""}</small></div><div class="side">${side(f.away)}</div></div></div>`}
 // Fiche à plusieurs matchs (NBA · résultats de la nuit) : le match de mon équipe d'abord, puis les autres
 function gamesCard(a){const T=TEAMS(),all=a.games||[],mine=all.filter(g=>g.mine&&T[g.mine]),rest=all.filter(g=>!(g.mine&&T[g.mine]));
-  const line=g=>{const hw=+g.hs>+g.as;return `<div class="gl"><span class="${hw?"w":""}">${esc(g.home)}</span><span class="sc"><b class="${hw?"w":""}">${esc(g.hs)}</b> – <b class="${hw?"":"w"}">${esc(g.as)}</b>${g.ot?`<small>a.p.</small>`:""}</span><span class="r ${hw?"":"w"}">${esc(g.away)}</span></div>`};
-  const head=`<p class="hint" style="margin:0 0 10px">${esc(a.sub||"")}${a.sub?" · ":""}${all.length} match${all.length>1?"s":""} · équipe à domicile à gauche</p>`;
+  const line=g=>{const hw=+g.hs>+g.as,box=/^\d+$/.test(g.id||"")?"https://www.espn.com/nba/boxscore/_/gameId/"+g.id:"",in_=`<span class="${hw?"w":""}">${esc(g.home)}</span><span class="sc"><b class="${hw?"w":""}">${esc(g.hs)}</b> – <b class="${hw?"":"w"}">${esc(g.as)}</b>${g.ot?`<small>a.p.</small>`:""}</span><span class="r ${hw?"":"w"}">${esc(g.away)}</span>`;
+    return box?`<a class="gl lk" href="${box}" target="_blank" rel="noopener" aria-label="Boxscore ${esc(g.home)} – ${esc(g.away)} sur ESPN">${in_}<span class="go" aria-hidden="true">›</span></a>`:`<div class="gl">${in_}</div>`};
+  const head=`<p class="hint" style="margin:0 0 10px">${esc(a.sub||"")}${a.sub?" · ":""}${all.length} match${all.length>1?"s":""} · équipe à domicile à gauche${all.some(g=>/^\d+$/.test(g.id||""))?" · touche un match pour son boxscore (ESPN)":""}</p>`;
   return head+mine.map(g=>{const won=g.mineHome?+g.hs>+g.as:+g.as>+g.hs;return `<div class="card gmine"><h4>${crest(g.mine)} Ton équipe · ${won?"victoire":"défaite"} ${g.mineHome?"à domicile":"à l'extérieur"}</h4>${line(g)}</div>`}).join("")+(rest.length?`<div class="card">${mine.length?`<h4>Les autres matchs</h4>`:""}${rest.map(line).join("")}</div>`:"")}
 // Fiches « à venir » : matchs NBA / MLB de la soirée (bilans, série) ou week-end foot des équipes suivies (chaîne télé)
 const hmP=iso=>new Date(iso).toLocaleTimeString("fr-FR",{timeZone:TZ,hour:"2-digit",minute:"2-digit"});
@@ -730,8 +734,17 @@ const bgFile=k=>"vestiaire-bg-"+k+".txt";
 const bgSrc=(k,th)=>th.mode==="photo"&&LS("vh-bg-"+k)?LS("vh-bg-"+k):"logos/wm-"+k+".png";
 function setTheme(k,patch){P.theme={...(P.theme||{})};P.theme[k]={...(P.theme[k]||{}),...patch,t:Date.now()};saveP()}
 // Image du filigrane : base = logo centré (80 %, 340 px max) ou photo plein cadre ; décalage dx/dy en fraction du cadre, zoom z
-function wmStyle(k,th,W,H){const photo=th.mode==="photo"&&LS("vh-bg-"+k);
-  const base=photo?`width:${W}px;height:${H}px;object-fit:cover;`:`width:${Math.min(W*.8,340*W/390)}px;height:auto;`;
+// Photo : à zoom 1 elle remplit le cadre ; comme l'image est posée entière (proportions connues), dézoomer montre ses vrais bords.
+// Proportions (largeur/hauteur) gardées dans vh-bg-ar-<clé> ; pour une photo déjà enregistrée, mesurées une fois puis l'affichage est refait.
+const bgArBusy={};
+function bgAR(k){const v=LS("vh-bg-ar-"+k);if(v>0)return v;const src=LS("vh-bg-"+k);
+  if(src&&!bgArBusy[k]){bgArBusy[k]=1;const im=new Image();im.onload=()=>{delete bgArBusy[k];if(!im.naturalWidth||!im.naturalHeight||LS("vh-bg-"+k)!==src)return;
+    LS("vh-bg-ar-"+k,+(im.naturalWidth/im.naturalHeight).toFixed(4));applyTheme();
+    if($("crop")&&ui.lookKey===k&&!drag)render()};
+    im.onerror=()=>{delete bgArBusy[k]};im.src=src}
+  return 0}
+function wmStyle(k,th,W,H){const photo=th.mode==="photo"&&LS("vh-bg-"+k),ar=photo?bgAR(k):0,pw=ar?Math.max(W,H*ar):W;
+  const base=photo?(ar?`width:${pw}px;height:${pw/ar}px;`:`width:${W}px;height:${H}px;object-fit:cover;`):`width:${Math.min(W*.8,340*W/390)}px;height:auto;`;
   return base+`opacity:${th.op};transform:translate(-50%,-50%) translate(${th.dx*W}px,${th.dy*H}px) scale(${th.z});${PEOPLE(k)&&!photo?"border-radius:50%;":""}`}
 function applyTheme(){
   const app=$("app"),wm=$("wm"),k=isTeamSel()&&["inbox","cal","teams","saved"].includes(ui.view)?ui.team:null;
@@ -744,12 +757,12 @@ new ResizeObserver(()=>applyTheme()).observe(document.getElementById("screen"));
 // Photos : téléchargées depuis le Gist quand un autre appareil en a mis une plus récente
 async function bgDownload(g){for(const k in (P.theme||{})){const th=P.theme[k];if(th.mode!=="photo"||!th.pt||(LS("vh-bg-t-"+k)||0)>=th.pt)continue;
   const f=g.files&&g.files[bgFile(k)];if(!f)continue;
-  try{const txt=f.truncated?await (await fetch(f.raw_url,{cache:"no-store"})).text():f.content;if(txt&&txt.startsWith("data:image")){LS("vh-bg-"+k,txt);LS("vh-bg-t-"+k,th.pt)}}catch(e){}}}
+  try{const txt=f.truncated?await (await fetch(f.raw_url,{cache:"no-store"})).text():f.content;if(txt&&txt.startsWith("data:image")){LS("vh-bg-"+k,txt);LS("vh-bg-t-"+k,th.pt);try{localStorage.removeItem("vh-bg-ar-"+k)}catch(e){}}}catch(e){}}}
 function loadPhoto(k,file){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{
   const W=Math.min(900,im.width),H=Math.round(im.height*W/im.width),c=document.createElement("canvas");c.width=W;c.height=H;c.getContext("2d").drawImage(im,0,0,W,H);
   const url=c.toDataURL("image/jpeg",.72),pt=Date.now();
   try{localStorage.setItem("vh-bg-"+k,JSON.stringify(url))}catch(e){alert("Photo trop lourde pour cet appareil.");return}
-  LS("vh-bg-t-"+k,pt);LS("vh-bg-pending",[...new Set([...(LS("vh-bg-pending")||[]),k])]);
+  LS("vh-bg-t-"+k,pt);LS("vh-bg-ar-"+k,+(W/H).toFixed(4));LS("vh-bg-pending",[...new Set([...(LS("vh-bg-pending")||[]),k])]);
   setTheme(k,{mode:"photo",pt,dx:0,dy:0,z:1,op:.22});render()};im.src=fr.result};fr.readAsDataURL(file)}
 
 function renderLook(){
@@ -757,6 +770,8 @@ function renderLook(){
   const th=themeOf(k),def=t.theme||{},sw=[...new Set([def.accent,t.c1,t.c2].filter(c=>c&&c.toLowerCase()!=="#ffffff"&&c.toLowerCase()!=="#000000"))];
   const sc=$("screen"),W=Math.max(300,sc.clientWidth||390),H=Math.max(400,sc.clientHeight||640),ph=Math.min(360,Math.round(240*H/W)),pw=Math.round(ph*W/H);
   const hasPhoto=!!LS("vh-bg-"+k);
+  // Zoom mini : 0,5 en général ; plus bas pour une photo dont le format est loin de celui de l'écran, afin de pouvoir la voir en entier
+  const ar=th.mode==="photo"&&hasPhoto?bgAR(k):0,cw=ar?Math.max(pw,ph*ar):pw,zMin=ar?Math.max(.2,Math.min(.5,Math.floor(Math.min(pw/cw,ph*ar/cw)*20)/20)):.5;
   return `<div class="pad"><div style="display:flex;align-items:center;gap:10px">${crest(k,"lg")}<h2 class="h2" style="flex:1;margin:0">Apparence · ${esc(t.label||t.name)}</h2><button class="btn sm primary" data-view="${esc(ui.lookBack||"teams")}">Terminé</button></div>
   <div class="sec">Couleur</div><div class="card"><div class="swatches">${sw.map(c=>`<button class="sw" data-accent="${esc(c)}" aria-pressed="${th.accent.toLowerCase()===c.toLowerCase()}" style="background:${esc(c)}" aria-label="Couleur ${esc(c)}"></button>`).join("")}<label class="sw pick" title="Choisir une autre couleur"><input type="color" id="accentPick" value="${esc(/^#[0-9a-f]{6}$/i.test(th.accent)?th.accent:"#5b8ff0")}"></label></div>
   <p class="hint">Couleurs du club, ou la roue pour choisir la tienne.${(P.theme[k]||{}).accent?` <button class="link" data-accent="">Revenir à la couleur d'origine</button>`:""}</p></div>
@@ -764,7 +779,7 @@ function renderLook(){
   <div class="actions" style="margin-top:10px"><label class="btn">${I.photo||""}${hasPhoto?"Changer de photo…":"Choisir une photo…"}<input type="file" id="bgFile" accept="image/*" hidden></label>${th.dx||th.dy||th.z!==1?`<button class="btn" data-recenter="1">Recentrer</button>`:""}</div>
   ${th.mode!=="none"?`<div class="crop" id="crop" style="width:${pw}px;height:${ph}px;--acc:${esc(th.accent)};background:${th.bar}"><img id="cropImg" src="${esc(bgSrc(k,th))}" alt="" draggable="false" style="${wmStyle(k,{...th,op:Math.max(th.op,.35)},pw,ph)}"><span class="frame-lbl">Aperçu de l'écran</span></div>
   <p class="hint">Fais glisser l'image pour la déplacer.</p>
-  <label class="rng">Zoom<input type="range" id="zoomR" min="0.5" max="3" step="0.05" value="${th.z}"></label>
+  <label class="rng">Zoom<input type="range" id="zoomR" min="${zMin}" max="3" step="0.05" value="${th.z}"></label>
   <label class="rng">Discret<input type="range" id="opR" min="0.04" max="0.45" step="0.01" value="${th.op}">Marqué</label>`:""}
   ${syncCfg?`<p class="hint">Ta photo et tes réglages sont synchronisés avec tes autres appareils.</p>`:`<p class="hint">Active la synchronisation (Réglages) pour retrouver ta photo sur tes autres appareils.</p>`}</div>
   ${P.theme[k]&&Object.keys(P.theme[k]).some(x=>x!=="t"&&x!=="pt")?`<div class="actions" style="margin-top:16px"><button class="btn" data-lookreset="1" style="flex:1">Remettre par défaut (couleur et logo du club)</button></div>`:""}</div>`}
