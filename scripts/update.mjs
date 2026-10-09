@@ -467,8 +467,8 @@ for (const [k, d] of Object.entries(teamData)) {
 }
 
 // ---------- fiches quotidiennes construites par le robot ("fiches" dans sources.json pour les couper) ----------
-const AUTO = new Set(["Résultats", "Agenda", "NBA", "Baseball Cube"]); // « sources » du robot : pas de filtre de titre, catégorie gardée
-const fiches = { nba: true, baseballCube: true, ...(cfg.fiches || {}) };
+const AUTO = new Set(["Résultats", "Agenda", "NBA", "MLB", "Week-end", "Baseball Cube"]); // « sources » du robot : pas de filtre de titre, catégorie gardée
+const fiches = { nba: true, baseballCube: true, nbaSoir: true, mlbSoir: true, footWeekend: true, ...(cfg.fiches || {}) };
 const nyDay = ms => new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // AAAA-MM-JJ, date de New York
 const dm = ymd => `${+ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
 // Heure de Paris -> instant UTC (gère heure d'été / d'hiver)
@@ -499,18 +499,99 @@ if (fiches.nba && teams.some(t => t.sport === "Basket")) {
 
 // Journal Baseball Cube : une fiche-lien à 12 h (heure de Paris) les lendemains de matchs de SAISON RÉGULIÈRE (calendrier MLB officiel ; le robot ne lit pas le site).
 const TBC_URL = "https://www.thebaseballcube.com/content/newspaper/";
-const TBC_ESSAI_FIN = Date.parse("2026-10-10T10:00:00Z"); // fiche d'essai demandée le 09/10/2026 : visible jusqu'au 10/10 à midi (Paris), puis retirée
 if (fiches.baseballCube && teams.some(t => t.sport === "Baseball")) {
-  const tbc = (id, day, at, essai) => ({ id, team: null, sport: "Baseball", cat: "journal", source: "Baseball Cube", title: `Journal Baseball Cube · matchs du ${dm(day)}${essai ? " (essai)" : ""}`,
-    summary: "Classements, mouvements, blessés et feuilles de match de la veille. Page en anglais." + (essai ? " (Fiche d'essai : elle disparaîtra demain midi.)" : ""), url: TBC_URL, urlLabel: "Ouvrir thebaseballcube.com", publishedAt: new Date(at).toISOString() });
-  if (now < TBC_ESSAI_FIN) fresh.push(tbc("tbc-essai", "2026-09-27", now, true));
+  const tbc = (id, day, at) => ({ id, team: null, sport: "Baseball", cat: "journal", source: "Baseball Cube", title: `Journal Baseball Cube · matchs du ${dm(day)}`,
+    summary: "Classements, mouvements, blessés et feuilles de match de la veille. Page en anglais.", url: TBC_URL, urlLabel: "Ouvrir thebaseballcube.com", publishedAt: new Date(at).toISOString() });
   if (parisNow.getUTCHours() >= 12) {
     const day = nyDay(now - DAY), id = `tbc-${day}`;
     if (!prevIds.has(id)) try {
       const j = await get(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${day}&gameType=R`, { json: true });
       const noon = Date.UTC(parisNow.getUTCFullYear(), parisNow.getUTCMonth(), parisNow.getUTCDate(), 12) - parisOffset;
-      if ((j.totalGames || 0) > 0) fresh.push(tbc(id, day, Math.min(noon, now), false));
+      if ((j.totalGames || 0) > 0) fresh.push(tbc(id, day, Math.min(noon, now)));
     } catch (e) { console.log(" - fiche Baseball Cube : " + e.message); }
+  }
+}
+
+// ---------- fiches « à venir » : au premier passage à partir de 15 h (heure de Paris), une fois par jour, jamais de score ----------
+const parisDay = ms => new Date(ms).toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+const frLong = ymd => new Date(ymd + "T12:00:00Z").toLocaleDateString("fr-FR", { timeZone: "UTC", day: "numeric", month: "long" });
+const apres15h = parisNow.getUTCHours() >= 15;
+// NBA et MLB : les matchs de la soirée américaine pas encore commencés, avec le bilan de chaque équipe (et l'état de la série en MLB)
+function serieFr(c, e) {
+  const sr = c.series; if (!sr || sr.completed || !/playoff/i.test(sr.type || "")) return null;
+  const head = (c.notes || []).map(n => n.headline || "").join(" ") + " " + (sr.title || "");
+  const tour = /world series/i.test(head) ? "Série mondiale" : /wild.?card|\bWC\b/i.test(head) ? "Série de wild-card" : /CS\b|championship/i.test(head) ? "Série de championnat" : /DS\b|division/i.test(head) ? "Série de division" : "Série éliminatoire";
+  const num = (head.match(/game\s+(\d+)/i) || [])[1];
+  const w = (sr.competitors || []).map(x => ({ w: +x.wins || 0, nm: ((c.competitors || []).find(k => String(k.team?.id) === String(x.id)) || {}).team?.shortDisplayName || "" }));
+  let etat = "";
+  if (w.length === 2 && (w[0].w || w[1].w)) { const [a, b] = w[0].w >= w[1].w ? w : [w[1], w[0]]; etat = a.w === b.w ? `égalité ${a.w}-${b.w}` : a.nm ? `${a.nm} mènent ${a.w}-${b.w}` : ""; }
+  return [tour, num ? "match " + num : "", etat].filter(Boolean).join(" · ");
+}
+async function soirUS({ flag, idPrefix, espnSport, sport, source, titre }) {
+  if (!flag || !apres15h || !teams.some(t => t.sport === sport)) return;
+  const day = nyDay(now), id = `${idPrefix}-${day}`;
+  if (prevIds.has(id)) return;
+  try {
+    const j = await get(`https://site.api.espn.com/apis/site/v2/sports/${espnSport}/scoreboard?dates=${day.replace(/-/g, "")}`, { json: true });
+    const evs = (j.events || []).filter(e => (e.status?.type?.state === "pre" || e.status?.type?.name === "STATUS_SCHEDULED") && Date.parse(e.date) > now).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    if (!evs.length) return; // pas de match = pas de fiche
+    const mineOf = name => (teams.find(t => t.sport === sport && t.chip !== false && t.data && matches(t, " " + name + " ")) || {}).key || null; // équipe suivie reconnue par ses mots-clés (76ers, Phillies, Blue Jays…)
+    const games = evs.map(e => {
+      const c = e.competitions?.[0] || {}, cs = c.competitors || [], h = cs.find(x => x.homeAway === "home") || cs[0], a = cs.find(x => x.homeAway === "away") || cs[1];
+      const nm = x => x.team?.shortDisplayName || x.team?.displayName || x.team?.abbreviation || "?";
+      const rec = x => ((x.records || []).find(r => r.type === "total") || (x.records || [])[0] || {}).summary || "";
+      const mh = mineOf(nm(h)), ma = mineOf(nm(a)), note = serieFr(c, e);
+      return { t: new Date(e.date).toISOString(), home: nm(h), away: nm(a), hr: rec(h), ar: rec(a), ...(note ? { note } : {}), ...(mh || ma ? { mine: mh || ma, mineHome: !!mh } : {}) };
+    });
+    const next = nyDay(Date.parse(day + "T12:00:00Z") + DAY), mine = games.filter(g => g.mine);
+    const quand = sport === "Basket" ? `Nuit du ${+day.slice(8, 10)} au ${frLong(next)}` : `Soirée du ${frLong(day)}`;
+    fresh.push({ id, team: null, sport, cat: "avant-match", source, title: `${titre} (${sport === "Basket" ? `${+day.slice(8, 10)} au ${dm(next)}` : dm(day)})`,
+      summary: `${games.length} match${games.length > 1 ? "s" : ""}${mine.length ? ", dont " + mine.map(g => `${g.away} chez les ${g.home}`).join(" et ") : ""}.`,
+      url: null, slate: { kind: "us", sub: quand, games }, publishedAt: new Date(now).toISOString() });
+  } catch (e) { console.log(` - fiche ${source} à venir : ` + e.message); }
+}
+await soirUS({ flag: fiches.nbaSoir, idPrefix: "nba-soir", espnSport: "basketball/nba", sport: "Basket", source: "NBA", titre: "NBA · les matchs de cette nuit" });
+await soirUS({ flag: fiches.mlbSoir, idPrefix: "mlb-soir", espnSport: "baseball/mlb", sport: "Baseball", source: "MLB", titre: "MLB · les matchs de ce soir" });
+
+// Foot : le vendredi, le week-end (vendredi -> lundi) des équipes suivies, avec la chaîne télé française quand elle est trouvée (footao.tv, lu une fois)
+export function parseFootao(html) {
+  const out = []; let day = null, m;
+  const re = /jr=(\d{1,2})&amp;ms=(\d{1,2})&amp;an=(\d{4})|<time(?:[^>]*content="(\d{4}-\d{2}-\d{2})T[^"]*")?[^>]*>(\d{1,2}:\d{2})[^<]*<\/time>\s*<a[^>]*>\s*<img[^>]*alt="([^"]*)"[^>]*>\s*<\/a>\s*<a[^>]*class="rc"[^>]*>(?:\s*<span[^>]*>)?([^<]+)/g;
+  while ((m = re.exec(html))) {
+    if (m[1]) { day = `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`; continue; }
+    const d = m[4] || day; if (!d) continue;
+    out.push({ day: d, ch: m[6].replace(/^match\s+/i, "").replace(/\s+foot\s+programme.*$/i, "").trim(), name: m[7].replace(/&#183;/g, "·").replace(/&amp;/g, "&").trim() });
+  }
+  return out;
+}
+if (fiches.footWeekend && apres15h && parisNow.getUTCDay() === 5) {
+  const ven = parisDay(now), id = `foot-we-${ven}`;
+  if (!prevIds.has(id)) {
+    const jours = [0, 1, 2, 3].map(i => parisDay(Date.parse(ven + "T12:00:00Z") + i * DAY));
+    const seen = new Set(), games = [];
+    for (const t of teams) {
+      if (t.sport !== "Foot" || t.chip === false) continue;
+      for (const g of (teamData[t.key] || {}).next || []) {
+        if (Date.parse(g.date) <= now || !jours.includes(parisDay(Date.parse(g.date)))) continue;
+        const home = g.home ? t.label || t.name : g.opp, away = g.home ? g.opp : t.label || t.name;
+        const autre = teams.find(x => x.sport === "Foot" && x.key !== t.key && matches(x, " " + g.opp + " "));
+        const k = g.date.slice(0, 13) + "|" + [t.key, autre?.key || g.opp].sort().join("|"); if (seen.has(k)) continue; seen.add(k);
+        games.push({ t: g.date, team: t.key, home, away, comp: String(g.comp || t.comp || "").replace(/^\d{4}-\d{2}\s+/, "").replace(/^English\s+/, "") });
+      }
+    }
+    if (games.length) {
+      games.sort((a, b) => Date.parse(a.t) - Date.parse(b.t));
+      try { // chaînes télé : si le site ne répond pas ou change, la fiche sort sans chaînes
+        const rows = parseFootao(await get("https://www.footao.tv/"));
+        for (const g of games) {
+          const ch = [...new Set(rows.filter(r => r.day === parisDay(Date.parse(g.t)) && matches(teamByKey[g.team], r.name)).map(r => r.ch))];
+          if (ch.length) g.tv = ch.slice(0, 2).join(" · ");
+        }
+      } catch (e) { console.log(" - chaînes télé (footao) : " + e.message); }
+      const fin = parisDay(Date.parse(games[games.length - 1].t)), deb = parisDay(Date.parse(games[0].t));
+      fresh.push({ id, team: null, sport: "Foot", cat: "avant-match", source: "Week-end", title: `Foot · le week-end de tes équipes (${deb === fin ? dm(deb) : `${+deb.slice(8, 10)} au ${dm(fin)}`})`,
+        summary: `${games.length} match${games.length > 1 ? "s" : ""} : ${games.map(g => `${g.home} – ${g.away}`).join(", ")}.`, url: null, slate: { kind: "foot", games }, publishedAt: new Date(now).toISOString() });
+    }
   }
 }
 
@@ -519,7 +600,8 @@ const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), ...AUTO]);
 const srcByName = Object.fromEntries(cfg.sources.map(s => [s.name, s]));
-const ficheOff = a => (a.source === "NBA" && !fiches.nba) || (a.source === "Baseball Cube" && (!fiches.baseballCube || (a.id === "tbc-essai" && now >= TBC_ESSAI_FIN)));
+const ficheOff = a => { const id = String(a.id); return id === "tbc-essai" // fiche d'essai du 09/10/2026 : retirée
+  || (id.startsWith("nba-soir-") ? !fiches.nbaSoir : id.startsWith("nba-") ? !fiches.nba : id.startsWith("mlb-soir-") ? !fiches.mlbSoir : id.startsWith("foot-we-") ? !fiches.footWeekend : id.startsWith("tbc-") ? !fiches.baseballCube : false); };
 for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url) && !ficheOff(a)) byId.set(a.id, AUTO.has(a.source) ? a
   : { ...a, cat: category(a.title), ...(shunned(teamByKey[a.team], a.title + " " + (a.summary || "")) ? { team: null } : {}) }); // article déjà publié : perd l'étiquette de l'équipe, reste dans le sport
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));

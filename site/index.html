@@ -134,6 +134,14 @@ a.spoil{text-decoration:none}
 .gl .w{color:var(--fg);font-weight:700}.gl .r{text-align:right}
 .gl .sc{font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center}
 .gl .sc b{font-weight:500}.gl .sc small{font-family:var(--f-mono);font-size:10px;margin-left:5px}
+.sl{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.sl:first-of-type{border-top:0}
+.sl time{font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--accent);padding-top:2px}
+.sl .tm{display:flex;flex-direction:column;gap:3px;min-width:0;font-weight:600}
+.sl .tm small{font-weight:400;font-size:12px;color:var(--muted)}
+.sl .rc{display:flex;flex-direction:column;gap:3px;align-items:flex-end;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:2px}
+.sl.ft{grid-template-columns:30px 1fr;align-items:center}
+.sl .tv{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;border:1px solid var(--line);font-family:var(--f-mono);font-size:10px;letter-spacing:.03em;color:var(--fg);white-space:nowrap}
 .card.gmine{border-color:var(--accent)}.card.gmine h4{display:flex;align-items:center;gap:8px}.card.gmine h4 .crest{width:22px;height:22px;font-size:8px}
 .crest.ico{background:var(--panel-2);font-size:17px;box-shadow:inset 0 0 0 1px var(--line)}.crest.ico.lg{font-size:27px}
 .fixture .mid small{display:block;font-family:var(--f-mono);font-weight:400;font-size:11px;color:var(--muted);margin-top:4px}
@@ -278,8 +286,10 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .wm img{position:absolute;left:50%;top:50%;max-width:none}
 .app.notabs .sports,.app.notabs .teams{display:none}
 .appbar .spoil{width:44px;min-height:44px;border-radius:22px}.appbar #allread{width:80px}.appbar{gap:4px}.brand{font-size:22px}.brand img{width:32px;height:32px}
-@media (max-width:440px){.appbar .brand{font-size:20px}}
-@media (max-width:400px){.appbar .brand{font-size:18px;gap:8px}.appbar .brand img{width:28px;height:28px}.appbar #allread{width:72px}}
+@media (max-width:374px){.appbar #allread{width:68px}}
+/* Onglet « À lire » : les news déjà lues gardent le rendu plein (sans changer leur état lu / non lu) */
+.v-saved .msg:not(.unread) .subj{color:var(--fg);font-weight:700}
+.v-saved .msg:not(.unread) .crest,.v-saved .msg:not(.unread) .from{opacity:1}
 #gear[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .icon-btn svg{width:22px;height:22px}
 .swatches{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
@@ -384,7 +394,7 @@ select.in{appearance:auto}
 <script>
 // ===== Vestiaire — version GitHub (sans IA). Lit data.json, mis à jour par GitHub Actions. =====
 const CATS={news:"News","avant-match":"Avant-match",resultat:"Résultat",transfert:"Mercato",journal:"Journal"};
-const AUTOICO={"NBA":"🏀","Baseball Cube":"⚾"}; // fiches quotidiennes construites par le robot
+const AUTOICO={"NBA":"🏀","MLB":"⚾","Week-end":"⚽","Baseball Cube":"⚾"}; // fiches quotidiennes construites par le robot
 const SPORT_ORDER=["Basket","Foot","Baseball","Rugby","F1","Cyclisme"];
 const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"],Rugby:["RUG","#7a1f2b","#e8e8e8"],F1:["F1","#d0021b","#1a1a1a"],Cyclisme:["VÉLO","#e0a800","#1a1a1a"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
@@ -658,6 +668,19 @@ function gamesCard(a){const T=TEAMS(),all=a.games||[],mine=all.filter(g=>g.mine&
   const line=g=>{const hw=+g.hs>+g.as;return `<div class="gl"><span class="${hw?"w":""}">${esc(g.home)}</span><span class="sc"><b class="${hw?"w":""}">${esc(g.hs)}</b> – <b class="${hw?"":"w"}">${esc(g.as)}</b>${g.ot?`<small>a.p.</small>`:""}</span><span class="r ${hw?"":"w"}">${esc(g.away)}</span></div>`};
   const head=`<p class="hint" style="margin:0 0 10px">${esc(a.sub||"")}${a.sub?" · ":""}${all.length} match${all.length>1?"s":""} · équipe à domicile à gauche</p>`;
   return head+mine.map(g=>{const won=g.mineHome?+g.hs>+g.as:+g.as>+g.hs;return `<div class="card gmine"><h4>${crest(g.mine)} Ton équipe · ${won?"victoire":"défaite"} ${g.mineHome?"à domicile":"à l'extérieur"}</h4>${line(g)}</div>`}).join("")+(rest.length?`<div class="card">${mine.length?`<h4>Les autres matchs</h4>`:""}${rest.map(line).join("")}</div>`:"")}
+// Fiches « à venir » : matchs NBA / MLB de la soirée (bilans, série) ou week-end foot des équipes suivies (chaîne télé)
+const hmP=iso=>new Date(iso).toLocaleTimeString("fr-FR",{timeZone:TZ,hour:"2-digit",minute:"2-digit"});
+function slateCard(a){const T=TEAMS(),s=a.slate,all=s.games||[],n=all.length;
+  if(s.kind==="foot"){let h="",last="";
+    for(const g of all){const d=new Date(g.t).toLocaleDateString("fr-FR",{timeZone:TZ,weekday:"long",day:"numeric",month:"long"});
+      if(d!==last){h+=(last?"</div>":"")+`<div class="card"><h4>${esc(d)}</h4>`;last=d}
+      h+=`<div class="sl ft">${T[g.team]?crest(g.team):`<span></span>`}<span class="tm"><b>${esc(g.home)} – ${esc(g.away)}</b><small>${hmP(g.t)}${g.comp?" · "+esc(g.comp):""}${g.tv?` <span class="tv">${esc(g.tv)}</span>`:""}</small></span></div>`}
+    return `<p class="hint" style="margin:0 0 10px">${n} match${n>1?"s":""} · heure de Paris</p>`+h+(last?"</div>":"")}
+  const mine=all.filter(g=>g.mine&&T[g.mine]),rest=all.filter(g=>!(g.mine&&T[g.mine]));
+  const line=g=>`<div class="sl"><time>${hmP(g.t)}</time><span class="tm"><span>${esc(g.away)}</span><span>${esc(g.home)}</span>${g.note?`<small>${esc(g.note)}</small>`:""}</span><span class="rc"><span>${esc(g.ar||"")}</span><span>${esc(g.hr||"")}</span></span></div>`;
+  return `<p class="hint" style="margin:0 0 10px">${esc(s.sub||"")}${s.sub?" · ":""}${n} match${n>1?"s":""} · heure de Paris · équipe à domicile en bas · bilan victoires-défaites</p>`
+    +mine.map(g=>`<div class="card gmine"><h4>${crest(g.mine)} Ton équipe · ${g.mineHome?"à domicile":"à l'extérieur"}</h4>${line(g)}</div>`).join("")
+    +(rest.length?`<div class="card">${mine.length?`<h4>Les autres matchs</h4>`:""}${rest.map(line).join("")}</div>`:"")}
 function renderSheet(){
   const sh=$("sheet"),a=ui.open&&findArt(ui.open);
   sh.classList.toggle("open",!!a);sh.setAttribute("aria-hidden",!a&&!WIDE());
@@ -670,6 +693,7 @@ function renderSheet(){
    ${a.summary?`<div class="txt"><p>${esc(a.summary)}</p></div>`:""}
    ${a.fixture?fixtureCard(a.fixture):""}
    ${a.games?gamesCard(a):""}
+   ${a.slate?slateCard(a):""}
    ${a.url?`<div class="actions"><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener" style="flex-basis:100%">${a.urlLabel?esc(a.urlLabel):"Lire l'article sur "+esc(a.source)}</a></div>`:""}
    <div class="actions"><button class="btn" id="toggleRead">${isRead(a.id)?"Marquer non lu":"Marquer lu"}</button>${t?`<button class="btn" data-team-open="${esc(a.team)}">Fiche ${esc(t.label||t.name)}</button>`:""}</div>`;
 }
@@ -1077,6 +1101,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="kwIn"
 function render(){renderTop();const v=ui.view;
   $("app").classList.toggle("notabs",LOGV.includes(v)||ADMV.includes(v));
   $("screen").innerHTML=v==="srcman"?renderSrcMan():v==="teamman"?renderTeamMan():v==="srcform"?renderSrcForm():v==="clubform"?renderClubForm():v==="robotcfg"?renderRobotCfg():v==="saved"?renderSaved():v==="cal"?renderCal():v==="teams"?renderTeams():v==="src"?renderSources():v==="log"?renderLog():v==="logform"?renderLogForm():v==="seasons"?renderSeasons():v==="compare"?renderCompare():v==="look"?renderLook():renderInbox();
+  $("screen").classList.toggle("v-saved",v==="saved");
   renderSheet();applyTheme()}
 
 document.addEventListener("click",e=>{

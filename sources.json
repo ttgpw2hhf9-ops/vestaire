@@ -2,7 +2,7 @@
   "_aide": "Fichier de configuration du hub. Modifie-le directement sur GitHub (icône crayon), puis « Commit changes ». La prochaine mise à jour (toutes les 30 min) prend les changements en compte.",
   "exclure": ["pronostic", "pronostics", "prono", "pronos", "paris sportifs", "pari sportif", "parier", "cote du match", "cotes", "bonus de bienvenue", "code promo", "bookmaker"],
   "journal": { "label": "Journal", "url": "https://kiosque.lequipe.fr/" },
-  "fiches": { "nba": true, "baseballCube": true },
+  "fiches": { "nba": true, "nbaSoir": true, "mlbSoir": true, "footWeekend": true, "baseballCube": true },
   "teams": [
     { "key": "nan", "name": "Nanterre 92", "label": "Nanterre", "short": "NAN", "sport": "Basket", "comp": "Betclic Élite · BCL", "c1": "#0d7a4f", "theme": { "accent": "#2fb36a", "bar": "#06180f" }, "c2": "#e9e9e9",
       "keywords": ["nanterre"],
