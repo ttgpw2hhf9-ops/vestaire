@@ -142,6 +142,14 @@ a.spoil{text-decoration:none}
 .sl .rc{display:flex;flex-direction:column;gap:3px;align-items:flex-end;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:2px}
 .sl.ft{grid-template-columns:30px 1fr;align-items:center}
 .sl .tv{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;border:1px solid var(--line);font-family:var(--f-mono);font-size:10px;letter-spacing:.03em;color:var(--fg);white-space:nowrap}
+.ch{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.ch:first-of-type{border-top:0}
+.ch .p{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ch .tm{min-width:0;display:flex;flex-direction:column;gap:1px}.ch .tm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch .tm small,.ch .v small{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch .v{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums;white-space:nowrap}.ch .v b{font-weight:600}
+.ch.me{background:color-mix(in srgb,var(--accent) 16%,transparent);margin:0 -10px;padding:8px 10px;border-radius:10px;border-top-color:transparent}.ch.me+.ch{border-top-color:transparent}.ch.me .p{color:var(--fg);font-weight:700}
+.ch-cut{display:flex;align-items:center;gap:8px;margin:6px 0 2px;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.ch-cut:before,.ch-cut:after{content:"";flex:1;border-top:1px dashed var(--line)}.ch-cut+.ch{border-top:0}
 .card.gmine{border-color:var(--accent)}.card.gmine h4{display:flex;align-items:center;gap:8px}.card.gmine h4 .crest{width:22px;height:22px;font-size:8px}
 .crest.ico{background:var(--panel-2);font-size:17px;box-shadow:inset 0 0 0 1px var(--line)}.crest.ico.lg{font-size:27px}
 .fixture .mid small{display:block;font-family:var(--f-mono);font-weight:400;font-size:11px;color:var(--muted);margin-top:4px}
@@ -681,6 +689,19 @@ function slateCard(a){const T=TEAMS(),s=a.slate,all=s.games||[],n=all.length;
   return `<p class="hint" style="margin:0 0 10px">${esc(s.sub||"")}${s.sub?" · ":""}${n} match${n>1?"s":""} · heure de Paris · équipe à domicile en bas · bilan victoires-défaites</p>`
     +mine.map(g=>`<div class="card gmine"><h4>${crest(g.mine)} Ton équipe · ${g.mineHome?"à domicile":"à l'extérieur"}</h4>${line(g)}</div>`).join("")
     +(rest.length?`<div class="card">${mine.length?`<h4>Les autres matchs</h4>`:""}${rest.map(line).join("")}</div>`:"")}
+// F1 · tableau de chronos (essais, qualifications, sprint, course) : une ligne par pilote ; mes pilotes surlignés
+function chronoCard(a){const tb=a.table,H=tb.head||[],R=tb.rows||[],fav=tb.fav||{},T=TEAMS();
+  const iP=Math.max(1,H.findIndex(x=>/pilote/i.test(x))),iC=H.findIndex(x=>/voiture|[ée]curie|[ée]quipe/i.test(x));
+  const D=H.map((x,i)=>i).filter(i=>i>0&&i!==iP&&i!==iC),tm=D.filter(i=>/^temps/i.test(H[i])),multi=tm.length>1;
+  const lab=i=>String(H[i]||"").replace(/^temps\s*/i,"")||H[i]||"";
+  const line=(r,i)=>{if(!r){const nx=R[i+1]||[],k=multi?[...tm].reverse().find(j=>nx[j]):null;return `<div class="ch-cut">éliminés${k!=null?" en "+esc(lab(k)):""}</div>`}
+    let main="",sub="";
+    if(multi){const k=[...tm].reverse().find(j=>r[j]);main=k!=null?r[k]:"";sub=k!=null?lab(k):""}
+    else{main=r[D[0]]||"";sub=D.slice(1).filter(j=>r[j]).map(j=>/^(temps|[ée]cart)/i.test(H[j])?r[j]:r[j]+" "+String(H[j]).toLowerCase()).join(" · ")}
+    const me=fav[i]&&T[fav[i]];
+    return `<div class="ch${me?" me":""}"><span class="p">${esc(r[0]||"")}</span><span class="tm"><b>${esc(r[iP]||"")}</b>${iC>=0&&r[iC]?`<small>${esc(r[iC])}</small>`:""}</span><span class="v"><b>${esc(main||"—")}</b>${sub?`<small>${esc(sub)}</small>`:""}</span></div>`};
+  const n=R.filter(Boolean).length;
+  return `<div class="card"><h4>Classement de la séance</h4><p class="hint" style="margin:0 0 6px">${n} pilote${n>1?"s":""}${multi?" · meilleur temps de la dernière partie disputée":""}${tb.partial?" · début du classement, la suite dans l'article":""}</p>${R.map(line).join("")}</div>`}
 function renderSheet(){
   const sh=$("sheet"),a=ui.open&&findArt(ui.open);
   sh.classList.toggle("open",!!a);sh.setAttribute("aria-hidden",!a&&!WIDE());
@@ -694,6 +715,7 @@ function renderSheet(){
    ${a.fixture?fixtureCard(a.fixture):""}
    ${a.games?gamesCard(a):""}
    ${a.slate?slateCard(a):""}
+   ${a.table?chronoCard(a):""}
    ${a.url?`<div class="actions"><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener" style="flex-basis:100%">${a.urlLabel?esc(a.urlLabel):"Lire l'article sur "+esc(a.source)}</a></div>`:""}
    <div class="actions"><button class="btn" id="toggleRead">${isRead(a.id)?"Marquer non lu":"Marquer lu"}</button>${t?`<button class="btn" data-team-open="${esc(a.team)}">Fiche ${esc(t.label||t.name)}</button>`:""}</div>`;
 }

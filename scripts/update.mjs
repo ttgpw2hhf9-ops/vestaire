@@ -22,7 +22,7 @@ async function get(url, { json = false, timeout = 20000 } = {}) {
 }
 
 // ---------- RSS / Atom ----------
-const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", hellip: "…", ndash: "–", mdash: "—", eacute: "é", egrave: "è", agrave: "à", ccedil: "ç", ecirc: "ê", ocirc: "ô", icirc: "î", ucirc: "û", laquo: "«", raquo: "»" };
+const ENT = { uuml: "ü", ouml: "ö", auml: "ä", iuml: "ï", euml: "ë", aacute: "á", oacute: "ó", iacute: "í", ntilde: "ñ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", hellip: "…", ndash: "–", mdash: "—", eacute: "é", egrave: "è", agrave: "à", ccedil: "ç", ecirc: "ê", ocirc: "ô", icirc: "î", ucirc: "û", laquo: "«", raquo: "»" };
 export function decode(s) {
   return String(s || "")
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
@@ -90,6 +90,42 @@ export function category(title) {
   if (RE_MERC.test(t)) return "transfert";
   if (RE_PRE.test(t)) return "avant-match";
   return "news";
+}
+// ---------- F1 : articles de chronos (Next Gen Auto, rubrique /resultats/) → étiquette Résultat + tableau mis en forme ----------
+// Reconnu à l'adresse (/formule-1/resultats/), au résumé du flux (« Pos.PiloteVoiture… ») ou au titre « F1 - GP de … - Essais Libres / Qualifications / Sprint / Course ».
+const RE_CHRONO_URL = /nextgen-auto\.com\/.*\/formule-1\/resultats\//, RE_CHRONO_TXT = /^\s*Pos\.\s*Pilote/;
+const RE_CHRONO_TITLE = /^F1\s*-\s*GP\b.*-\s*(essais libres|qualifications?|sprint|course|warm[- ]?up)/i;
+export const isChrono = a => a.sport === "F1" && (!!a.table || RE_CHRONO_URL.test(a.url || "") || RE_CHRONO_TXT.test(a.summary || "") || RE_CHRONO_TITLE.test(a.title || ""));
+const chronoCell = c => { const v = stripHtml(c).slice(0, 40); return /^[\s\-–—:.]*$/.test(v) ? "" : v; }; // « - :—.--- » (pas de temps) et lignes de tirets → vide
+// Tableau de la page de l'article : { head: [...], rows: [[...] | null] } (null = trait de coupure entre deux parties des qualifications)
+export function parseChronoTable(html) {
+  const m = String(html || "").match(/<table[\s\S]*?<\/table>/i); if (!m) return null;
+  const trs = (m[0].match(/<tr[\s>][\s\S]*?<\/tr>/gi) || []).map(tr => ({ th: /<th[\s>]/i.test(tr), c: (tr.match(/<t[hd][\s>][\s\S]*?<\/t[hd]>/gi) || []).slice(0, 8).map(chronoCell) }));
+  const h = trs.find(r => r.th), head = h ? h.c : null;
+  if (!head || !head.some(x => /pilote/i.test(x))) return null;
+  const rows = [];
+  for (const r of trs) { if (r === h || !r.c.length) continue;
+    if (r.c.every(x => !x)) { if (rows.length && rows[rows.length - 1]) rows.push(null); } else rows.push(r.c); }
+  while (rows.length && !rows[rows.length - 1]) rows.pop();
+  return rows.filter(Boolean).length >= 3 ? { head, rows: rows.slice(0, 40) } : null;
+}
+// Secours : le résumé du flux, collé en une ligne et coupé après quelques pilotes → les lignes complètes seulement (partial)
+export function parseChronoFlat(txt) {
+  const t = String(txt || "").replace(/\s+/g, " ").trim(), m = t.match(/^Pos\.\s*Pilote\s*Voiture\s*(.*?) (?=1 \S)/); if (!m) return null;
+  const head = ["Pos.", "Pilote", "Voiture", ...m[1].split(/(?=Temps|Tours|[ÉE]cart|Points|Pts)/).map(x => x.trim()).filter(Boolean)];
+  const rows = [], re = /(\d{1,2}) (\S+ \S+) (.+?) ((?:\d+:)?\d{1,3}\.\d{3}(?: [\d:.+]+)*)(?= \d{1,2} [A-ZÀ-Ý]| ?$)/g;
+  let r; const body = t.slice(m[0].length);
+  while ((r = re.exec(body)) && rows.length < 40) { if (+r[1] !== rows.length + 1) break; rows.push([r[1], r[2], r[3], ...r[4].split(" ")]); }
+  return rows.length >= 3 ? { head, rows, partial: true } : null;
+}
+const RE_TIME = /^(\d+:)?\d{1,3}\.\d{3}$/;
+// Phrase courte pour la liste : les trois premiers et les pilotes suivis
+export function chronoSummary(table, favs) {
+  const rows = table.rows.filter(Boolean), iP = Math.max(1, table.head.findIndex(x => /pilote/i.test(x)));
+  const nom = r => String(r[iP] || "").split(" ").slice(1).join(" ") || r[iP], best = r => [...r].reverse().find(x => RE_TIME.test(x)) || "";
+  const top = rows.slice(0, 3).map((r, i) => `${i + 1}. ${nom(r)}${i === 0 && best(r) ? " (" + best(r) + ")" : ""}`).join(" · ");
+  const mine = favs.map(f => { const r = rows.find(r => matches(f, r[iP] || "")), n = r ? parseInt(r[0], 10) || rows.indexOf(r) + 1 : 0; return r ? { n, s: `${f.label || f.name} ${n}${n === 1 ? "er" : "e"}` } : null; }).filter(Boolean).sort((a, b) => a.n - b.n).map(x => x.s);
+  return `${top}.${mine.length ? " Tes pilotes : " + mine.join(", ") + "." : ""}${table.partial ? " Classement complet dans l'article." : ""}`;
 }
 const sha = s => crypto.createHash("sha1").update(s).digest("hex").slice(0, 16);
 // Mots à exclure (sources.json > "exclure") : l'article est ignoré si son titre ou son résumé contient l'un d'eux
@@ -607,7 +643,7 @@ for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));
 for (const f of fresh) {
   const { firstSeen, ...a } = f, old = byId.get(a.id);
-  if (old) { byId.set(a.id, { ...a, publishedAt: old.publishedAt }); continue; }
+  if (old) { byId.set(a.id, { ...a, ...(old.table ? { table: old.table, summary: old.summary } : {}), publishedAt: old.publishedAt }); continue; }
   if (firstSeen) { if (prevTitles.has(norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60))) continue; a.publishedAt = new Date().toISOString(); }
   byId.set(a.id, a);
 }
@@ -624,6 +660,26 @@ const keep = new Set(), perTeam = {};
 for (const a of sorted) if (a.team && !AUTO.has(a.source) && (perTeam[a.team] = (perTeam[a.team] || 0) + 1) <= PER_TEAM) keep.add(a);
 for (const a of sorted) { if (keep.size >= MAX_ARTICLES) break; keep.add(a); }
 const articles = sorted.filter(a => keep.has(a));
+
+// F1 : chronos en « Résultat », tableau lu sur la page de l'article (une fois ; 4 pages au plus par passage), à défaut sur le résumé du flux
+{
+  const favF1 = teams.filter(t => t.sport === "F1" && (t.keywords || []).length);
+  let lus = 0;
+  for (const a of articles.filter(isChrono)) {
+    a.cat = "resultat";
+    if ((!a.table || a.table.partial) && RE_CHRONO_URL.test(a.url || "") && lus < 4 && now - Date.parse(a.publishedAt) < 3 * DAY) {
+      lus++;
+      try { const t = parseChronoTable(await get(a.url, { timeout: 15000 })); if (t) a.table = t; }
+      catch (e) { console.log(` - chronos F1 : page illisible (${e.message}) — ${a.url}`); }
+    }
+    if (!a.table && RE_CHRONO_TXT.test(a.summary || "")) { const t = parseChronoFlat(a.summary); if (t) a.table = t; }
+    if (a.table) {
+      const iP = Math.max(1, a.table.head.findIndex(x => /pilote/i.test(x))), fav = {};
+      a.table.rows.forEach((r, i) => { const f = r && favF1.find(f => matches(f, r[iP] || "")); if (f) fav[i] = f.key; });
+      a.table.fav = fav; a.summary = chronoSummary(a.table, favF1);
+    } else if (RE_CHRONO_TXT.test(a.summary || "")) a.summary = "Classement de la séance : voir l'article.";
+  }
+}
 
 const out = {
   updatedAt: new Date().toISOString(),
