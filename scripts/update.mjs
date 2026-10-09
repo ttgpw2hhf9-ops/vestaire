@@ -127,7 +127,7 @@ for (const src of cfg.sources) {
   if (/news\.google\./.test(used)) items = items.map(it => ({ ...it, title: it.title.replace(/\s+[-–]\s+[^-–]+$/, ""), desc: "", image: null }));
   // Flux Bing Actualités (2e secours) : liens parfois enveloppés, dates peu fiables -> on date à la 1re apparition
   const viaBing = /bing\.com\/news/.test(used);
-  if (viaBing) items = items.map(it => { let link = it.link; try { const u = new URL(link); if (/bing\.com$/.test(u.hostname) && u.searchParams.get("url")) link = u.searchParams.get("url"); } catch {} return { ...it, link, _first: true }; });
+  if (viaBing) items = items.map(it => { let link = it.link; try { const u = new URL(link); if (/bing\.com$/.test(u.hostname) && u.searchParams.get("url")) link = u.searchParams.get("url"); } catch {} return { ...it, link, ...(src.trustDates ? {} : { _first: true }) }; }); // "trustDates" : on garde la date du flux (ex. Le Devoir)
   let kept = 0;
   for (const it of items) {
     if (src.urlMatch && !/news\.google\./.test(used) && !it.link.includes(src.urlMatch)) continue;
@@ -466,12 +466,61 @@ for (const [k, d] of Object.entries(teamData)) {
   }
 }
 
+// ---------- fiches quotidiennes construites par le robot ("fiches" dans sources.json pour les couper) ----------
+const AUTO = new Set(["Résultats", "Agenda", "NBA", "Baseball Cube"]); // « sources » du robot : pas de filtre de titre, catégorie gardée
+const fiches = { nba: true, baseballCube: true, ...(cfg.fiches || {}) };
+const nyDay = ms => new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // AAAA-MM-JJ, date de New York
+const dm = ymd => `${+ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
+// Heure de Paris -> instant UTC (gère heure d'été / d'hiver)
+const parisOffset = Math.round((new Date(new Date(now).toLocaleString("en-US", { timeZone: "Europe/Paris" })) - new Date(new Date(now).toLocaleString("en-US", { timeZone: "UTC" }))) / 6e4) * 6e4;
+const parisNow = new Date(now + parisOffset); // à lire avec getUTC*
+
+// NBA · résultats de la nuit : une fiche quand TOUS les matchs de la veille (date de New York) sont terminés. Scores dans "games", jamais dans le titre.
+if (fiches.nba && teams.some(t => t.sport === "Basket")) {
+  const day = nyDay(now - DAY), id = `nba-${day}`;
+  if (!prevIds.has(id)) try {
+    const j = await get(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${day.replace(/-/g, "")}`, { json: true });
+    const evs = (j.events || []).filter(e => !/postponed|canceled|cancelled/i.test(e.status?.type?.name || e.status?.type?.description || ""));
+    if (evs.length && evs.every(e => e.status?.type?.completed)) {
+      const mineOf = ab => (teams.find(t => t.data?.type === "espn" && t.data.sport === "basketball/nba" && String(t.data.team).toLowerCase() === String(ab || "").toLowerCase()) || {}).key || null;
+      const games = evs.sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).map(e => {
+        const c = e.competitions?.[0]?.competitors || [], h = c.find(x => x.homeAway === "home") || c[0], a = c.find(x => x.homeAway === "away") || c[1];
+        const nm = x => x.team?.shortDisplayName || x.team?.displayName || x.team?.abbreviation || "?";
+        const mh = mineOf(h.team?.abbreviation), ma = mineOf(a.team?.abbreviation);
+        return { home: nm(h), away: nm(a), hs: String(h.score ?? ""), as: String(a.score ?? ""), ...((e.status?.period || 0) > 4 ? { ot: true } : {}), ...(mh || ma ? { mine: mh || ma, mineHome: !!mh } : {}) };
+      });
+      const slug = evs[0].season?.slug || "", sub = slug === "preseason" ? "Présaison" : slug === "regular-season" ? "Saison régulière" : /post|play/.test(slug) ? "Playoffs" : "NBA";
+      const next = nyDay(Date.parse(day + "T12:00:00Z") + DAY), mine = games.filter(g => g.mine);
+      fresh.push({ id, team: null, sport: "Basket", cat: "resultat", source: "NBA", title: `NBA · résultats de la nuit du ${+day.slice(8, 10)} au ${dm(next)}`,
+        summary: `${games.length} match${games.length > 1 ? "s" : ""}${mine.length ? ", dont " + mine.map(g => `${g.home} – ${g.away}`).join(" et ") : ""}.`, url: null, sub, games, publishedAt: new Date(now).toISOString() });
+    }
+  } catch (e) { console.log(" - fiche NBA : " + e.message); }
+}
+
+// Journal Baseball Cube : une fiche-lien à 12 h (heure de Paris) les lendemains de matchs de SAISON RÉGULIÈRE (calendrier MLB officiel ; le robot ne lit pas le site).
+const TBC_URL = "https://www.thebaseballcube.com/content/newspaper/";
+const TBC_ESSAI_FIN = Date.parse("2026-10-10T10:00:00Z"); // fiche d'essai demandée le 09/10/2026 : visible jusqu'au 10/10 à midi (Paris), puis retirée
+if (fiches.baseballCube && teams.some(t => t.sport === "Baseball")) {
+  const tbc = (id, day, at, essai) => ({ id, team: null, sport: "Baseball", cat: "journal", source: "Baseball Cube", title: `Journal Baseball Cube · matchs du ${dm(day)}${essai ? " (essai)" : ""}`,
+    summary: "Classements, mouvements, blessés et feuilles de match de la veille. Page en anglais." + (essai ? " (Fiche d'essai : elle disparaîtra demain midi.)" : ""), url: TBC_URL, urlLabel: "Ouvrir thebaseballcube.com", publishedAt: new Date(at).toISOString() });
+  if (now < TBC_ESSAI_FIN) fresh.push(tbc("tbc-essai", "2026-09-27", now, true));
+  if (parisNow.getUTCHours() >= 12) {
+    const day = nyDay(now - DAY), id = `tbc-${day}`;
+    if (!prevIds.has(id)) try {
+      const j = await get(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${day}&gameType=R`, { json: true });
+      const noon = Date.UTC(parisNow.getUTCFullYear(), parisNow.getUTCMonth(), parisNow.getUTCDate(), 12) - parisOffset;
+      if ((j.totalGames || 0) > 0) fresh.push(tbc(id, day, Math.min(noon, now), false));
+    } catch (e) { console.log(" - fiche Baseball Cube : " + e.message); }
+  }
+}
+
 // ---------- fusion avec la version précédente ----------
 const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
-const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
+const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), ...AUTO]);
 const srcByName = Object.fromEntries(cfg.sources.map(s => [s.name, s]));
-for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a
+const ficheOff = a => (a.source === "NBA" && !fiches.nba) || (a.source === "Baseball Cube" && (!fiches.baseballCube || (a.id === "tbc-essai" && now >= TBC_ESSAI_FIN)));
+for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url) && !ficheOff(a)) byId.set(a.id, AUTO.has(a.source) ? a
   : { ...a, cat: category(a.title), ...(shunned(teamByKey[a.team], a.title + " " + (a.summary || "")) ? { team: null } : {}) }); // article déjà publié : perd l'étiquette de l'équipe, reste dans le sport
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));
 for (const f of fresh) {
@@ -484,13 +533,13 @@ for (const [k, a] of byId) if (Date.parse(a.publishedAt) > Date.now() && a.sourc
 const seenTitles = new Set();
 const sorted = [...byId.values()]
   .filter(a => teams.some(t => t.key === a.team) || (!a.team && a.sport))
-  .filter(a => a.source === "Résultats" || a.source === "Agenda" || (goodTitle(a.title, a.source) && !excluded(a.title + " " + (a.summary || ""))))
+  .filter(a => AUTO.has(a.source) || (goodTitle(a.title, a.source) && !excluded(a.title + " " + (a.summary || ""))))
   .filter(a => now - Date.parse(a.publishedAt) <= KEEP_DAYS * DAY)
   .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
   .filter(a => { const k = norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60); if (seenTitles.has(k)) return false; seenTitles.add(k); return true; });
 // Plafond global, mais chaque équipe garde ses PER_TEAM articles les plus récents (clubs peu couverts : Red Star, Servette…)
 const keep = new Set(), perTeam = {};
-for (const a of sorted) if (a.team && a.source !== "Résultats" && a.source !== "Agenda" && (perTeam[a.team] = (perTeam[a.team] || 0) + 1) <= PER_TEAM) keep.add(a);
+for (const a of sorted) if (a.team && !AUTO.has(a.source) && (perTeam[a.team] = (perTeam[a.team] || 0) + 1) <= PER_TEAM) keep.add(a);
 for (const a of sorted) { if (keep.size >= MAX_ARTICLES) break; keep.add(a); }
 const articles = sorted.filter(a => keep.has(a));
 

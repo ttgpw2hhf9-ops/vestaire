@@ -2,6 +2,7 @@
   "_aide": "Fichier de configuration du hub. Modifie-le directement sur GitHub (icône crayon), puis « Commit changes ». La prochaine mise à jour (toutes les 30 min) prend les changements en compte.",
   "exclure": ["pronostic", "pronostics", "prono", "pronos", "paris sportifs", "pari sportif", "parier", "cote du match", "cotes", "bonus de bienvenue", "code promo", "bookmaker"],
   "journal": { "label": "Journal", "url": "https://kiosque.lequipe.fr/" },
+  "fiches": { "nba": true, "baseballCube": true },
   "teams": [
     { "key": "nan", "name": "Nanterre 92", "label": "Nanterre", "short": "NAN", "sport": "Basket", "comp": "Betclic Élite · BCL", "c1": "#0d7a4f", "theme": { "accent": "#2fb36a", "bar": "#06180f" }, "c2": "#e9e9e9",
       "keywords": ["nanterre"],
@@ -87,6 +88,8 @@
       "feeds": ["https://www.rds.ca/arc/outboundfeeds/rss/category/baseball/mlb/?outputType=xml"] },
     { "name": "Phillies Nation", "logo": "phillies-nation", "scope": "phs", "site": "https://www.philliesnation.com/",
       "feeds": ["https://www.philliesnation.com/feed/", "https://news.google.com/rss/search?q=site:philliesnation.com+when:3d&hl=en-US&gl=US&ceid=US:en", "https://www.bing.com/news/search?q=site%3Aphilliesnation.com&format=rss&setlang=en-us"] },
+    { "name": "Le Devoir", "scope": "tor", "filter": true, "trustDates": true, "urlExclude": ["/communiques-de-presse/"], "site": "https://www.ledevoir.com/motcle/blue-jays",
+      "feeds": ["https://news.google.com/rss/search?q=site:ledevoir.com+%22blue+jays%22+when:14d&hl=fr-CA&gl=CA&ceid=CA:fr", "https://www.bing.com/news/search?q=site%3Aledevoir.com+%22blue+jays%22&format=rss&setlang=fr-ca"] },
     { "name": "L'Équipe · F1", "logo": "lequipe", "urlExclude": ["/Video/", "/Medias/"], "scope": "sport:F1", "keep": "all", "site": "https://www.lequipe.fr/Formule-1/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Formule-1/", "https://news.google.com/rss/search?q=site:lequipe.fr/Formule-1+when:2d&hl=fr&gl=FR&ceid=FR:fr"] },
     { "name": "Next Gen Auto", "logo": "next-gen-auto", "scope": "sport:F1", "keep": "all", "urlMatch": "/formule-1/", "site": "https://motorsport.nextgen-auto.com/fr/formule-1/",
