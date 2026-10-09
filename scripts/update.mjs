@@ -77,6 +77,8 @@ function matches(team, text) {
 }
 // Mots à écarter pour une équipe ("exclude" dans sources.json, ex. XV de France sans le rugby féminin)
 const shunned = (team, text) => !!(team && team.exclude && team.exclude.length && matches({ keywords: team.exclude }, text));
+// Morceaux d'adresse à écarter pour un site ("urlExclude" dans sources.json, ex. vidéos et rubrique Médias de L'Équipe)
+const urlShunned = (src, url) => !!(src && src.urlExclude && src.urlExclude.some(u => String(url || "").includes(u)));
 // Catégorie devinée sur le TITRE seulement (le résumé donnait trop de faux positifs : « combat », « s'offre »…)
 const W = s => new RegExp(`(^|[^a-z])(${s})([^a-z]|$)`);
 const RE_MERC = W("mercato|transferts?|recrues?|recrute|recrutement|s'engage|signe (a|au|chez|pour|jusqu|un contrat|avec)|prolonge|prolongation|contrat|rumeurs?|trade|echange avec|free agent|agent libre|arbitrage salarial|pret|prete|joker medical|libere|quitte|depart (de|du) .* vers|arrive (a|au|chez)");
@@ -129,6 +131,7 @@ for (const src of cfg.sources) {
   let kept = 0;
   for (const it of items) {
     if (src.urlMatch && !/news\.google\./.test(used) && !it.link.includes(src.urlMatch)) continue;
+    if (urlShunned(src, it.link)) continue;
     it.title = it.title.replace(/^\s*[-–—|]\s*/, "").trim();
     if (!goodTitle(it.title, src.name)) continue;
     const text = it.title + " " + it.desc;
@@ -467,7 +470,8 @@ for (const [k, d] of Object.entries(teamData)) {
 const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), "Résultats", "Agenda"]);
-for (const a of prev) if (activeSources.has(a.source)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a
+const srcByName = Object.fromEntries(cfg.sources.map(s => [s.name, s]));
+for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url)) byId.set(a.id, a.source === "Résultats" || a.source === "Agenda" ? a
   : { ...a, cat: category(a.title), ...(shunned(teamByKey[a.team], a.title + " " + (a.summary || "")) ? { team: null } : {}) }); // article déjà publié : perd l'étiquette de l'équipe, reste dans le sport
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));
 for (const f of fresh) {
