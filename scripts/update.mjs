@@ -234,7 +234,7 @@ async function espn(t) {
     const rows = (grp.standings?.entries || []).map(en => ({ name: en.team.shortDisplayName || en.team.displayName, me: String(en.team.id) === String(t.data.team) || en.team.abbreviation?.toLowerCase() === String(t.data.team).toLowerCase(),
       val: soccer ? stat(en, "points") : `${stat(en, "wins") ?? 0}-${stat(en, "losses") ?? 0}`, sort: soccer ? stat(en, "points") : stat(en, "winPercent") ?? 0 }))
       .sort((a, b) => b.sort - a.sort).map((r, i) => ({ rank: i + 1, name: r.name, val: r.val, me: r.me }));
-    standings = { title: grp.name || grp.abbreviation || "Classement", unit: soccer ? "pts" : "V-D", rows: trimRows(rows), win: win5(rows), n: rows.length };
+    standings = { title: grp.name || grp.abbreviation || "Classement", unit: soccer ? "pts" : "V-D", rows: trimRows(rows), all: rows, win: win5(rows), n: rows.length };
   } catch {}
   return { next: next.sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(0, 5), last: last.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 5), standings };
 }
@@ -352,7 +352,7 @@ async function leagueTable(t) {
     .map((x, i) => ({ rank: i + 1, name: x.name, val: foot ? String(pts(x)) : `${x.w}-${x.l}`, me: norm(x.name).includes(me) }));
   const nr = Object.keys(cache.rounds).length;
   const title = `${t.data.tableTitle || "Betclic Élite"} · après ${nr} journée${nr > 1 ? "s" : ""}`;
-  return { cache, events: raw, standings: rows.length ? { title, unit: foot ? "pts" : "V-D", rows: foot ? rows : trimRows(rows), win: win5(rows), n: rows.length } : null };
+  return { cache, events: raw, standings: rows.length ? { title, unit: foot ? "pts" : "V-D", rows: foot ? rows : trimRows(rows), ...(foot ? {} : { all: rows }), win: win5(rows), n: rows.length } : null };
 }
 // EuroLeague : API officielle (classement de la dernière journée commencée)
 async function euroleague(t) {
@@ -390,7 +390,7 @@ function f1Standings(ds, me) {
   const rows = ds.map(x => ({ rank: +x.position, name: dName(x.Driver), val: x.points, me: mine.includes(x.Driver.driverId), id: x.Driver.driverId }));
   const top = rows.slice(0, 10);
   const wins = Object.fromEntries(mine.map(id => [id, win5(rows.map(r => ({ ...r, me: r.id === id })))]));
-  return { title: "Championnat pilotes", col: "Pilote", unit: "pts", n: rows.length, wins, rows: [...top, ...rows.filter(r => r.me && !top.includes(r))] };
+  return { title: "Championnat pilotes", col: "Pilote", unit: "pts", n: rows.length, all: rows, wins, rows: [...top, ...rows.filter(r => r.me && !top.includes(r))] };
 }
 // Pilote suivi (ex. hadjar, piastri) : ses derniers résultats, la prochaine course, sa place au championnat
 async function f1driver(t) {
