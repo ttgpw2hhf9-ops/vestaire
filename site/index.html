@@ -614,7 +614,9 @@ function renderTop(){
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["rank","Classement"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
 // Fiches « agenda » mises en avant : heure du match en grand (avant-match), barre et fond teintés
-const kickOf=a=>{if(a.cat!=="avant-match")return null;const t=a.kick||(a.fixture&&a.fixture.date)||(a.slate&&a.slate.games&&a.slate.games[0]&&a.slate.games[0].t);return t&&!isNaN(Date.parse(t))?t:null};
+const AGSRC=new Set(["Agenda","NBA","MLB","Week-end","Classements"]); // fiches construites par le robot : seules mises en avant (les news « avant-match » des sites gardent l'aspect d'une news)
+const isAg=a=>(a.cat==="avant-match"||a.cat==="classement")&&AGSRC.has(a.source);
+const kickOf=a=>{if(!isAg(a)||a.cat!=="avant-match")return null;const t=a.kick||(a.fixture&&a.fixture.date)||(a.slate&&a.slate.games&&a.slate.games[0]&&a.slate.games[0].t);return t&&!isNaN(Date.parse(t))?t:null};
 const dkey=ms=>new Date(ms).toLocaleDateString("en-CA",{timeZone:TZ});
 function kickLabel(a,t){if(a.slate)return "1er match";const h=+new Date(t).toLocaleTimeString("fr-FR",{timeZone:TZ,hour:"2-digit",hour12:false})%24,kd=dkey(t),now=Date.now();
   if(kd===dkey(now))return h>=17?"Ce soir":"Aujourd'hui";if(kd===dkey(now+864e5)&&h<6)return "Cette nuit";
@@ -622,7 +624,7 @@ function kickLabel(a,t){if(a.slate)return "1er match";const h=+new Date(t).toLoc
 const miniSide=x=>TEAMS()[x]?crest(x):`<span class="crest" style="--c1:#6b778a;--c2:#9aa5b5" aria-hidden="true">${esc(String(x).slice(0,3).toUpperCase())}</span>`;
 function agExtra(a){if(a.fixture)return `<span class="vsl">${miniSide(a.fixture.home)}<span>vs</span>${miniSide(a.fixture.away)}<span>${esc(a.fixture.comp||"")}</span></span>`;
   if(a.slate||a.cat==="classement")return a.summary?`<span class="sub2">${esc(a.summary)}</span>`:"";return ""}
-function row(a){const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&(a.cat==="avant-match"||a.cat==="classement");return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
+function row(a){const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
   <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
   <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
