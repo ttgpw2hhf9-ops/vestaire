@@ -188,6 +188,7 @@ table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:ta
 th{font-family:var(--f-mono);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:8px;border-bottom:1px solid var(--line)}
 tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:600}
+tr.me.tc td{background:color-mix(in srgb,var(--rk) 40%,transparent);font-weight:700}
 .cal-row{display:grid;grid-template-columns:52px 30px 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .cal-row .when{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
 .cal-row .what{min-width:0}
@@ -610,7 +611,7 @@ function renderTop(){
   const nb=c=>c?`<span class="n">${c}</span>`:"";
   $("teams").innerHTML=`<button class="team all" data-team="all" aria-pressed="${ui.team==="all"}">Tout${nb(n(ui.sport))}</button>`+teamsOf(ui.sport).filter(k=>T[k].chip!==false).map(k=>`<button class="team ico" data-team="${esc(k)}" aria-pressed="${ui.team===k}" aria-label="${esc(T[k].label||T[k].name)}" title="${esc(T[k].label||T[k].name)}">${crest(k)}${nb(unread(a=>a.team===k))}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
-  $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["rank","Classements"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
+  $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["rank","Classement"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
 // Fiches « agenda » mises en avant : heure du match en grand (avant-match), barre et fond teintés
 const kickOf=a=>{if(a.cat!=="avant-match")return null;const t=a.kick||(a.fixture&&a.fixture.date)||(a.slate&&a.slate.games&&a.slate.games[0]&&a.slate.games[0].t);return t&&!isNaN(Date.parse(t))?t:null};
@@ -660,16 +661,16 @@ function teamCard(k){
    <dl class="kv"><dt>Prochain</dt><dd>${nx?`${nx.label?esc(nx.label):(nx.home?"vs ":"@ ")+esc(nx.opp)}<br><span class="comp">${esc(dayLabel(nx.date))} · ${hm(nx.date)}${nx.comp&&!nx.label?" · "+esc(nx.comp):""}</span>`:`<span class="comp">pas encore connu</span>`}</dd>
    ${hid&&(lastLine||st)?`<dt>Résultats</dt><dd><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Cachés · afficher</button></dd>`:lastLine}</dl>`)+`
    ${d.standingsOnly&&hid&&st?`<p style="margin:10px 0 0"><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Classement caché · afficher</button></p>`:""}
-   ${!hid&&st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
+   ${!hid&&st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me tc":""}" ${r.me?`style="--rk:${esc(themeOf(k).accent)}"`:""}><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
 }
 // Onglet Classements : le classement complet de chaque compétition suivie ; mes équipes en couleur
 function renderRank(){const T=TEAMS(),seen=new Map();
   for(const k of scopeKeys().filter(k=>T[k])){const st=(D.teamData[k]||{}).standings,rows=st&&(st.all||st.rows);if(!rows||!rows.length)continue;
-    const key=st.title||k;let e=seen.get(key);if(!e){e={st,rows,mine:new Set(),teams:[]};seen.set(key,e)}e.teams.push(k);rows.filter(r=>r.me).forEach(r=>e.mine.add(r.name))}
+    const key=st.title||k;let e=seen.get(key);if(!e){e={st,rows,mine:new Set(),own:{},teams:[]};seen.set(key,e)}e.teams.push(k);rows.filter(r=>r.me).forEach(r=>{e.mine.add(r.name);e.own[r.name]=k})}
   let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Classements"}</h2>`;
   if(!seen.size)return h+`<p class="empty">Pas de classement pour cette sélection.</p></div>`;
   for(const e of seen.values()){const st=e.st;
-    h+=`<div class="card"><h4 style="display:flex;align-items:center;gap:8px;margin:0 0 8px">${e.teams.map(k=>crest(k)).join("")}<span>${esc(st.title||"Classement")}</span></h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${e.rows.map(r=>`<tr class="${e.mine.has(r.name)?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table></div>`}
+    h+=`<div class="card"><h4 style="display:flex;align-items:center;gap:8px;margin:0 0 8px">${e.teams.map(k=>crest(k)).join("")}<span>${esc(st.title||"Classement")}</span></h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${e.rows.map(r=>`<tr class="${e.mine.has(r.name)?"me tc":""}" ${e.own[r.name]?`style="--rk:${esc(themeOf(e.own[r.name]).accent)}"`:""}><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table></div>`}
   return h+`</div>`}
 function renderTeams(){
   const T=TEAMS(),sp=isTeamSel()?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
