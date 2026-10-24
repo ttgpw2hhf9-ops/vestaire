@@ -234,7 +234,7 @@ async function espn(t) {
     const rows = (grp.standings?.entries || []).map(en => ({ name: en.team.shortDisplayName || en.team.displayName, me: String(en.team.id) === String(t.data.team) || en.team.abbreviation?.toLowerCase() === String(t.data.team).toLowerCase(),
       val: soccer ? stat(en, "points") : `${stat(en, "wins") ?? 0}-${stat(en, "losses") ?? 0}`, sort: soccer ? stat(en, "points") : stat(en, "winPercent") ?? 0 }))
       .sort((a, b) => b.sort - a.sort).map((r, i) => ({ rank: i + 1, name: r.name, val: r.val, me: r.me }));
-    standings = { title: grp.name || grp.abbreviation || "Classement", unit: soccer ? "pts" : "V-D", rows: trimRows(rows) };
+    standings = { title: grp.name || grp.abbreviation || "Classement", unit: soccer ? "pts" : "V-D", rows: trimRows(rows), win: win5(rows), n: rows.length };
   } catch {}
   return { next: next.sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(0, 5), last: last.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 5), standings };
 }
@@ -254,7 +254,7 @@ async function mlb(t) {
     const rec = (s.records || []).find(r => r.teamRecords.some(x => x.team.id === t.data.id));
     if (rec) standings = { title: rec.division?.nameShort || rec.division?.name || "Division", unit: "V-D", rows: rec.teamRecords.map(x => ({ rank: +x.divisionRank, name: x.team.teamName || x.team.name, val: `${x.wins}-${x.losses}`, me: x.team.id === t.data.id })) };
   } catch {}
-  return { next: next.slice(0, 5), last: last.reverse().slice(0, 5), standings };
+  return { next: next.slice(0, 5), last: last.reverse().slice(0, 5), standings: addWin(standings) };
 }
 async function sofascore(t) {
   const ev = async kind => (await get(`https://api.sofascore.com/api/v1/team/${t.data.id}/events/${kind}/0`, { json: true })).events || [];
@@ -316,7 +316,7 @@ async function lnrStandings(t) {
   lnrPage = lnrPage || get("https://top14.lnr.fr/classement").then(parseLnr).catch(() => null);
   const p = await lnrPage;
   if (!p || p.rows.length < 10 || !p.rows.some(r => r.slug === t.data.lnr)) return null;
-  return { title: p.round ? `Top 14 · après la journée ${p.round}` : "Top 14", unit: "pts", rows: p.rows.map(r => ({ rank: r.rank, name: r.name, val: String(r.pts), me: r.slug === t.data.lnr })) };
+  return addWin({ title: p.round ? `Top 14 · après la journée ${p.round}` : "Top 14", unit: "pts", rows: p.rows.map(r => ({ rank: r.rank, name: r.name, val: String(r.pts), me: r.slug === t.data.lnr })) });
 }
 // Classement Betclic Élite recalculé à partir des résultats journée par journée (TheSportsDB, gratuit).
 // Les journées terminées sont gardées dans data.json : seules les journées en cours / nouvelles sont relues.
@@ -352,7 +352,7 @@ async function leagueTable(t) {
     .map((x, i) => ({ rank: i + 1, name: x.name, val: foot ? String(pts(x)) : `${x.w}-${x.l}`, me: norm(x.name).includes(me) }));
   const nr = Object.keys(cache.rounds).length;
   const title = `${t.data.tableTitle || "Betclic Élite"} · après ${nr} journée${nr > 1 ? "s" : ""}`;
-  return { cache, events: raw, standings: rows.length ? { title, unit: foot ? "pts" : "V-D", rows: foot ? rows : trimRows(rows) } : null };
+  return { cache, events: raw, standings: rows.length ? { title, unit: foot ? "pts" : "V-D", rows: foot ? rows : trimRows(rows), win: win5(rows), n: rows.length } : null };
 }
 // EuroLeague : API officielle (classement de la dernière journée commencée)
 async function euroleague(t) {
@@ -387,9 +387,10 @@ const dName = d => `${d.givenName[0]}. ${d.familyName}`;
 function f1Standings(ds, me) {
   if (!ds.length) return null;
   const mine = [].concat(me || []);
-  const rows = ds.map(x => ({ rank: +x.position, name: dName(x.Driver), val: x.points, me: mine.includes(x.Driver.driverId) }));
+  const rows = ds.map(x => ({ rank: +x.position, name: dName(x.Driver), val: x.points, me: mine.includes(x.Driver.driverId), id: x.Driver.driverId }));
   const top = rows.slice(0, 10);
-  return { title: "Championnat pilotes", col: "Pilote", unit: "pts", rows: [...top, ...rows.filter(r => r.me && !top.includes(r))] };
+  const wins = Object.fromEntries(mine.map(id => [id, win5(rows.map(r => ({ ...r, me: r.id === id })))]));
+  return { title: "Championnat pilotes", col: "Pilote", unit: "pts", n: rows.length, wins, rows: [...top, ...rows.filter(r => r.me && !top.includes(r))] };
 }
 // Pilote suivi (ex. hadjar, piastri) : ses derniers résultats, la prochaine course, sa place au championnat
 async function f1driver(t) {
@@ -434,6 +435,14 @@ async function boxAvailable(url) {
   try { const r = await fetch(url, { method: "GET", headers: { "User-Agent": UA }, redirect: "follow" }); return r.status === 404 ? false : true; }
   catch { return true; } // site injoignable : on publie quand même le lien
 }
+// 5 lignes autour de mon équipe : 2 au-dessus, la mienne, 2 en dessous ; en haut ou en bas de tableau la fenêtre glisse (toujours 5 lignes)
+function win5(rows) {
+  const r = [...rows].sort((a, b) => a.rank - b.rank), i = r.findIndex(x => x.me);
+  if (i < 0) return null;
+  const k = Math.min(5, r.length), s0 = Math.max(0, Math.min(i - 2, r.length - k));
+  return r.slice(s0, s0 + k);
+}
+const addWin = st => st && st.rows?.length ? { ...st, win: win5(st.rows), n: st.rows.length } : st;
 function trimRows(rows) { const top = rows.slice(0, 8); const me = rows.find(r => r.me); return me && !top.includes(me) ? [...top, me] : top; }
 
 // Version publiée précédente (articles + historique des matchs)
@@ -471,6 +480,18 @@ for (const t of teams) {
 
 const prevIds = new Set(prev.map(a => a.id));
 
+// Heure de Paris à un instant donné (gère l'heure d'été / d'hiver)
+const offAt = ms => Math.round((new Date(new Date(ms).toLocaleString("en-US", { timeZone: "Europe/Paris" })) - new Date(new Date(ms).toLocaleString("en-US", { timeZone: "UTC" }))) / 6e4) * 6e4;
+// Fiche « Avant-match » : elle sort le jour sportif du match (match entre minuit et 6 h = veille), à partir de 15 h
+// heure de Paris, ou 3 h avant le coup d'envoi si le match est plus tôt (jamais avant 6 h) ; jamais après le coup d'envoi.
+function preDue(kick) {
+  if (!(kick > now)) return false;
+  const w = new Date(kick + offAt(kick)), h = w.getUTCHours() + w.getUTCMinutes() / 60;
+  const day0 = Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate() - (h < 6 ? 1 : 0));
+  const wallKick = Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate(), w.getUTCHours(), w.getUTCMinutes());
+  const release = Math.max(day0 + 6 * 36e5, Math.min(day0 + 15 * 36e5, wallKick - 3 * 36e5));
+  return now + offAt(now) >= release;
+}
 // Articles automatiques : résultats récents et matchs à venir
 const fmt = (d) => new Date(d).toLocaleString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", hour: "2-digit", minute: "2-digit" });
 for (const [k, d] of Object.entries(teamData)) {
@@ -482,9 +503,8 @@ for (const [k, d] of Object.entries(teamData)) {
       fresh.push({ id: `res-f1-${g.season}-${g.round}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title: `${g.label} : le classement de la course`, summary: (g.fav?.length ? "Tes pilotes : " + g.fav.join(" · ") + ". — " : "") + g.top.map(x => `${x.pos}. ${x.name} (${x.team})${x.time ? " — " + x.time : ""}`).join(" · "), url: "https://motorsport.nextgen-auto.com/fr/formule-1/resultats/", urlLabel: "Résultats complets (Next Gen Auto)", publishedAt: new Date(Math.min(Date.parse(g.date) + 2.5 * 36e5, now)).toISOString() });
     }
     for (const g of d.next || []) {
-      const dt = Date.parse(g.date) - now;
-      if (dt < 0 || dt > 36 * 36e5 || !/Qualif|Sprint|Course/.test(g.comp)) continue;
-      fresh.push({ id: `pre-${g.id}`, team: k, sport: t.sport, cat: "avant-match", source: "Agenda", title: g.label, summary: `${fmt(g.date)} (heure de Paris).`, url: null, publishedAt: new Date(now).toISOString() });
+      if (!/Qualif|Sprint|Course/.test(g.comp) || !preDue(Date.parse(g.date))) continue;
+      fresh.push({ id: `pre-${g.id}`, team: k, sport: t.sport, cat: "avant-match", source: "Agenda", title: g.label, summary: `${fmt(g.date)} (heure de Paris).`, url: null, kick: g.date, publishedAt: new Date(now).toISOString() });
     }
     continue;
   }
@@ -496,15 +516,14 @@ for (const [k, d] of Object.entries(teamData)) {
     fresh.push({ id: `res-${k}-${g.date.slice(0, 10)}`, team: k, sport: t.sport, cat: "resultat", source: "Résultats", title, summary: `${g.result === "W" ? "Victoire" : g.result === "L" ? "Défaite" : "Match nul"} ${g.home ? "à domicile" : "à l'extérieur"}${g.comp ? " · " + g.comp : ""}.`, url: g.box?.url || null, urlLabel: g.box?.label || null, publishedAt: new Date(Math.min(Date.parse(g.date) + 3 * 36e5, now)).toISOString(), fixture: { home: g.home ? k : g.opp, away: g.home ? g.opp : k, score: g.home ? `${a} – ${b}` : `${b} – ${a}`, comp: g.comp, date: g.date } });
   }
   for (const g of d.next || []) {
-    const dt = Date.parse(g.date) - now;
-    if (dt < 0 || dt > 36 * 36e5) continue;
-    fresh.push({ id: `pre-${k}-${g.date.slice(0, 10)}`, team: k, sport: t.sport, cat: "avant-match", source: "Agenda", title: `${t.label} ${g.home ? "reçoit" : "se déplace chez"} ${g.opp}`, summary: `${fmt(g.date)} (heure de Paris)${g.comp ? " · " + g.comp : ""}.`, url: null, publishedAt: new Date(now).toISOString(), fixture: { home: g.home ? k : g.opp, away: g.home ? g.opp : k, comp: g.comp, date: g.date } });
+    if (!preDue(Date.parse(g.date))) continue;
+    fresh.push({ id: `pre-${k}-${g.date.slice(0, 10)}`, team: k, sport: t.sport, cat: "avant-match", source: "Agenda", title: `${t.label} ${g.home ? "reçoit" : "se déplace chez"} ${g.opp}`, summary: `${fmt(g.date)} (heure de Paris)${g.comp ? " · " + g.comp : ""}.`, url: null, kick: g.date, publishedAt: new Date(now).toISOString(), fixture: { home: g.home ? k : g.opp, away: g.home ? g.opp : k, comp: g.comp, date: g.date } });
   }
 }
 
 // ---------- fiches quotidiennes construites par le robot ("fiches" dans sources.json pour les couper) ----------
-const AUTO = new Set(["Résultats", "Agenda", "NBA", "MLB", "Week-end", "Baseball Cube"]); // « sources » du robot : pas de filtre de titre, catégorie gardée
-const fiches = { nba: true, baseballCube: true, nbaSoir: true, mlbSoir: true, footWeekend: true, ...(cfg.fiches || {}) };
+const AUTO = new Set(["Résultats", "Agenda", "NBA", "MLB", "Week-end", "Baseball Cube", "Classements"]); // « sources » du robot : pas de filtre de titre, catégorie gardée
+const fiches = { nba: true, baseballCube: true, nbaSoir: true, mlbSoir: true, footWeekend: true, classementsLundi: true, ...(cfg.fiches || {}) };
 const nyDay = ms => new Date(ms).toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // AAAA-MM-JJ, date de New York
 const dm = ymd => `${+ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
 // Heure de Paris -> instant UTC (gère heure d'été / d'hiver)
@@ -632,13 +651,35 @@ if (fiches.footWeekend && apres15h && parisNow.getUTCDay() === 5) {
   }
 }
 
+// Classements : le lundi, au premier passage à partir de 15 h (heure de Paris), une fiche par sport (l'appli range les fiches par sport).
+// Un bloc par équipe suivie, 5 lignes (2 au-dessus, 2 en dessous, fenêtre qui glisse en haut / bas de tableau). Sport hors saison : pas de bloc.
+if (fiches.classementsLundi && apres15h && parisNow.getUTCDay() === 1) {
+  const day = parisDay(now), bySport = {};
+  for (const t of teams) {
+    if (t.chip === false || !t.sport) continue;
+    const d = teamData[t.key] || {};
+    const saison = (d.next || []).some(g => Date.parse(g.date) > now && Date.parse(g.date) < now + 21 * DAY) || (d.last || []).some(g => now - Date.parse(g.date) < 7 * DAY);
+    if (!saison) continue;
+    let st = d.standings, win = st?.win;
+    if (t.data?.type === "f1driver") { st = teamData[teams.find(x => x.data?.type === "f1")?.key]?.standings; win = st?.wins?.[t.data.driverId]; }
+    if (!win?.length || !win.some(r => r.me)) continue;
+    (bySport[t.sport] = bySport[t.sport] || []).push({ team: t.key, comp: String(st.title || "Classement").replace(/^\d{4}\/\d{4}\s+/, "").replace(/\s*·\s*après.*$/i, ""), unit: st.unit, col: st.col || null, n: st.n || win.length, rows: win.map(r => ({ rank: r.rank, name: r.name, val: String(r.val), me: !!r.me })) });
+  }
+  for (const [sport, blocks] of Object.entries(bySport)) {
+    const id = `classements-${sport.toLowerCase()}-${day}`;
+    if (prevIds.has(id)) continue;
+    const place = b => { const r = b.rows.find(x => x.me); return `${teamByKey[b.team].label || teamByKey[b.team].name} ${r.rank}${r.rank === 1 ? "er" : "e"}`; };
+    fresh.push({ id, team: null, sport, cat: "classement", source: "Classements", title: `Classements · ${sport} (${dm(day)})`, summary: blocks.map(place).join(" · ") + ".", url: null, ranks: { blocks }, publishedAt: new Date(now).toISOString() });
+  }
+}
+
 // ---------- fusion avec la version précédente ----------
 const repo = process.env.GITHUB_REPOSITORY;
 const byId = new Map();
 const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s => s.name), ...AUTO]);
 const srcByName = Object.fromEntries(cfg.sources.map(s => [s.name, s]));
 const ficheOff = a => { const id = String(a.id); return id === "tbc-essai" // fiche d'essai du 09/10/2026 : retirée
-  || (id.startsWith("nba-soir-") ? !fiches.nbaSoir : id.startsWith("nba-") ? !fiches.nba : id.startsWith("mlb-soir-") ? !fiches.mlbSoir : id.startsWith("foot-we-") ? !fiches.footWeekend : id.startsWith("tbc-") ? !fiches.baseballCube : false); };
+  || (id.startsWith("nba-soir-") ? !fiches.nbaSoir : id.startsWith("nba-") ? !fiches.nba : id.startsWith("mlb-soir-") ? !fiches.mlbSoir : id.startsWith("foot-we-") ? !fiches.footWeekend : id.startsWith("classements-") ? !fiches.classementsLundi : id.startsWith("tbc-") ? !fiches.baseballCube : false); };
 for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url) && !ficheOff(a)) byId.set(a.id, AUTO.has(a.source) ? a
   : { ...a, cat: category(a.title), ...(shunned(teamByKey[a.team], a.title + " " + (a.summary || "")) ? { team: null } : {}) }); // article déjà publié : perd l'étiquette de l'équipe, reste dans le sport
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));

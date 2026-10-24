@@ -109,9 +109,22 @@ a.spoil{text-decoration:none}
 .msg .from time{margin-right:2px}
 .msg:not(.unread) .subj{color:var(--muted);font-weight:400}
 .msg:not(.unread) .crest,.msg:not(.unread) .from{opacity:.55}
+.msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
+.msg.ag-pre{--c-ag:var(--accent)} .msg.ag-cl{--c-ag:var(--warn)}
+.msg.ag::before{background:var(--c-ag)}
+.msg.ag .subj{font-size:16px}
+.msg.ag:not(.unread) .subj{color:var(--fg);font-weight:500}
+.msg.ag:not(.unread) .crest,.msg.ag:not(.unread) .from{opacity:.85}
+.msg.has-kick .from time{display:none}
+.msg .kick{display:flex;flex-direction:column;align-items:flex-end;line-height:1;margin-top:2px}
+.msg .kick b{font-family:var(--f-mono);font-size:21px;font-weight:700;color:var(--fg)}
+.msg .kick span{font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;color:var(--c-ag);margin-top:4px;white-space:nowrap;text-transform:uppercase}
+.msg .vsl{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.msg .vsl .crest{width:20px;height:20px;font-size:8px;border-radius:6px}
+.msg .sub2{display:block;margin-top:4px;font-size:12px;color:var(--muted);line-height:1.3}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .tag{white-space:nowrap;font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
-.tag.news{color:var(--loss)} .tag.resultat{color:var(--win)} .tag.transfert{color:var(--warn)} .tag.avant-match{color:var(--accent)} .tag.resume{color:var(--fg)} .tag.journal{color:var(--warn)} .tag.lang{color:var(--muted);margin-left:4px} .tag.abo{color:#b8860b}
+.tag.news{color:var(--loss)} .tag.resultat{color:var(--win)} .tag.transfert{color:var(--warn)} .tag.avant-match{color:var(--accent)} .tag.classement{color:var(--warn)} .tag.resume{color:var(--fg)} .tag.journal{color:var(--warn)} .tag.lang{color:var(--muted);margin-left:4px} .tag.abo{color:#b8860b}
 .empty{padding:32px 16px;color:var(--muted);text-align:center}
 
 .pad{padding:4px 16px 24px}
@@ -289,6 +302,10 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .app.themed{--accent:var(--th-accent);--bar:var(--th-bar);--bg:var(--th-bar);--panel:color-mix(in srgb,var(--th-accent) 14%,var(--th-bar));--panel-2:color-mix(in srgb,var(--th-accent) 20%,var(--th-bar));--line:rgba(255,255,255,.08);--accent-ink:#fff}
 .app.themed .screen{position:relative;z-index:1;background:transparent}
 .app.themed .msg{background:transparent}
+.app.themed .msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
+.card.rk h4{display:flex;align-items:center;gap:8px}.card.rk h4 .crest{width:22px;height:22px;font-size:8px}.card.rk h4>span:nth-child(2){min-width:0}.card.rk .rkpos{margin-left:auto;white-space:nowrap;flex:none;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.rkl{display:grid;grid-template-columns:28px 1fr 56px;align-items:center;padding:8px 8px;border-radius:8px;font-size:15px}.rkl.h{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-top:2px;padding-bottom:2px}
+.rkl span:first-child,.rkl span:last-child{font-variant-numeric:tabular-nums}.rkl span:last-child{text-align:right}.rkl.me{background:color-mix(in srgb,var(--rk) 38%,transparent);font-weight:700}
 .app.themed .msg.unread{background:color-mix(in srgb,var(--th-accent) 7%,transparent)}
 .app.themed .team[aria-pressed="true"]{background:var(--th-accent);border-color:var(--th-accent);color:#fff}
 .app.themed .team.ico[aria-pressed="true"]{background:transparent;box-shadow:0 0 0 2px var(--th-accent)}
@@ -404,8 +421,8 @@ select.in{appearance:auto}
 
 <script>
 // ===== Vestiaire — version GitHub (sans IA). Lit data.json, mis à jour par GitHub Actions. =====
-const CATS={news:"News","avant-match":"Avant-match",resultat:"Résultat",transfert:"Mercato",journal:"Journal"};
-const AUTOICO={"NBA":"🏀","MLB":"⚾","Week-end":"⚽","Baseball Cube":"⚾"}; // fiches quotidiennes construites par le robot
+const CATS={news:"News","avant-match":"Avant-match",resultat:"Résultat",classement:"Classement",transfert:"Mercato",journal:"Journal"};
+const AUTOICO={"NBA":"🏀","MLB":"⚾","Week-end":"⚽","Baseball Cube":"⚾","Classements":"🏆"}; // fiches quotidiennes construites par le robot
 const SPORT_ORDER=["Basket","Foot","Baseball","Rugby","F1","Cyclisme"];
 const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"],Rugby:["RUG","#7a1f2b","#e8e8e8"],F1:["F1","#d0021b","#1a1a1a"],Cyclisme:["VÉLO","#e0a800","#1a1a1a"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
@@ -593,9 +610,18 @@ function renderTop(){
   const u=unread(()=>true),sv=P.saved.length;
   $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["log","Carnet"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k||(k==="log"&&LOGV.includes(ui.view))}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
-function row(a){const m=isMasked(a),t=TEAMS()[a.team];return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
-  <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>`}</span>
-  <span class="right">${isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
+// Fiches « agenda » mises en avant : heure du match en grand (avant-match), barre et fond teintés
+const kickOf=a=>{if(a.cat!=="avant-match")return null;const t=a.kick||(a.fixture&&a.fixture.date)||(a.slate&&a.slate.games&&a.slate.games[0]&&a.slate.games[0].t);return t&&!isNaN(Date.parse(t))?t:null};
+const dkey=ms=>new Date(ms).toLocaleDateString("en-CA",{timeZone:TZ});
+function kickLabel(a,t){if(a.slate)return "1er match";const h=+new Date(t).toLocaleTimeString("fr-FR",{timeZone:TZ,hour:"2-digit",hour12:false})%24,kd=dkey(t),now=Date.now();
+  if(kd===dkey(now))return h>=17?"Ce soir":"Aujourd'hui";if(kd===dkey(now+864e5)&&h<6)return "Cette nuit";
+  return new Date(t).toLocaleDateString("fr-FR",{timeZone:TZ,weekday:"short"}).replace(".","")}
+const miniSide=x=>TEAMS()[x]?crest(x):`<span class="crest" style="--c1:#6b778a;--c2:#9aa5b5" aria-hidden="true">${esc(String(x).slice(0,3).toUpperCase())}</span>`;
+function agExtra(a){if(a.fixture)return `<span class="vsl">${miniSide(a.fixture.home)}<span>vs</span>${miniSide(a.fixture.away)}<span>${esc(a.fixture.comp||"")}</span></span>`;
+  if(a.slate||a.cat==="classement")return a.summary?`<span class="sub2">${esc(a.summary)}</span>`:"";return ""}
+function row(a){const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&(a.cat==="avant-match"||a.cat==="classement");return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
+  <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
+  <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
   const list=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat));
@@ -693,6 +719,11 @@ function slateCard(a){const T=TEAMS(),s=a.slate,all=s.games||[],n=all.length;
   return `<p class="hint" style="margin:0 0 10px">${esc(s.sub||"")}${s.sub?" · ":""}${n} match${n>1?"s":""} · heure de Paris · équipe à domicile en bas · bilan victoires-défaites</p>`
     +mine.map(g=>`<div class="card gmine"><h4>${crest(g.mine)} Ton équipe · ${g.mineHome?"à domicile":"à l'extérieur"}</h4>${line(g)}</div>`).join("")
     +(rest.length?`<div class="card">${mine.length?`<h4>Les autres matchs</h4>`:""}${rest.map(line).join("")}</div>`:"")}
+// Classements du lundi : un bloc par équipe suivie, 5 lignes, mon équipe en couleur
+function ranksCard(a){const T=TEAMS(),bl=(a.ranks&&a.ranks.blocks)||[];
+  const unitL=b=>b.unit==="pts"?"Pts":b.unit==="V-D"?"V–D":(b.unit||"");
+  return `<p class="hint" style="margin:0 0 10px">${bl.length} classement${bl.length>1?"s":""} · ton équipe en couleur, avec ses voisines au classement</p>`+bl.map(b=>{const me=b.rows.find(r=>r.me),t=T[b.team];if(!me)return "";
+    return `<div class="card rk" style="--rk:${esc(themeOf(b.team).accent)}"><h4>${t?crest(b.team):""}<span>${esc(b.comp)}</span><span class="rkpos">${me.rank}${me.rank===1?"er":"e"} / ${b.n}</span></h4><div class="rkl h"><span></span><span>${esc(b.col||"Équipe")}</span><span>${unitL(b)}</span></div>${b.rows.map(r=>`<div class="rkl${r.me?" me":""}"><span>${esc(r.rank)}</span><span>${esc(r.name)}</span><span>${esc(r.val)}</span></div>`).join("")}</div>`}).join("")}
 // F1 · tableau de chronos (essais, qualifications, sprint, course) : une ligne par pilote ; mes pilotes surlignés
 function chronoCard(a){const tb=a.table,H=tb.head||[],R=tb.rows||[],fav=tb.fav||{},T=TEAMS();
   const iP=Math.max(1,H.findIndex(x=>/pilote/i.test(x))),iC=H.findIndex(x=>/voiture|[ée]curie|[ée]quipe/i.test(x));
@@ -719,6 +750,7 @@ function renderSheet(){
    ${a.fixture?fixtureCard(a.fixture):""}
    ${a.games?gamesCard(a):""}
    ${a.slate?slateCard(a):""}
+   ${a.ranks?ranksCard(a):""}
    ${a.table?chronoCard(a):""}
    ${a.url?`<div class="actions"><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener" style="flex-basis:100%">${a.urlLabel?esc(a.urlLabel):"Lire l'article sur "+esc(a.source)}</a></div>`:""}
    <div class="actions"><button class="btn" id="toggleRead">${isRead(a.id)?"Marquer non lu":"Marquer lu"}</button>${t?`<button class="btn" data-team-open="${esc(a.team)}">Fiche ${esc(t.label||t.name)}</button>`:""}</div>`;
