@@ -79,6 +79,10 @@ function matches(team, text) {
 const shunned = (team, text) => !!(team && team.exclude && team.exclude.length && matches({ keywords: team.exclude }, text));
 // Morceaux d'adresse à écarter pour un site ("urlExclude" dans sources.json, ex. vidéos et rubrique Médias de L'Équipe)
 const urlShunned = (src, url) => !!(src && src.urlExclude && src.urlExclude.some(u => String(url || "").includes(u)));
+// Débuts de titre à écarter pour un site ("titleStartExclude" dans sources.json, ex. rubriques « Talk Show », « OM au Café » du Phocéen) :
+// compare le DÉBUT du titre seulement, sans accents ni majuscules (« OM au Café 30/10/26 : … » écarté, « Genesio : pas de commentaire » gardé)
+const titleShunned = (src, title) => { if (!(src && src.titleStartExclude && src.titleStartExclude.length)) return false;
+  const t = norm(String(title || "")).replace(/^[\s\-–—|:«"']+/, ""); return src.titleStartExclude.some(w => { const k = norm(w); return t.startsWith(k) && !/[a-z0-9]/.test(t.charAt(k.length)); }); };
 // Catégorie devinée sur le TITRE seulement (le résumé donnait trop de faux positifs : « combat », « s'offre »…)
 const W = s => new RegExp(`(^|[^a-z])(${s})([^a-z]|$)`);
 const RE_MERC = W("mercato|transferts?|recrues?|recrute|recrutement|s'engage|signe (a|au|chez|pour|jusqu|un contrat|avec)|prolonge|prolongation|contrat|rumeurs?|trade|echange avec|free agent|agent libre|arbitrage salarial|pret|prete|joker medical|libere|quitte|depart (de|du) .* vers|arrive (a|au|chez)");
@@ -170,6 +174,7 @@ for (const src of cfg.sources) {
     if (urlShunned(src, it.link)) continue;
     it.title = it.title.replace(/^\s*[-–—|]\s*/, "").trim();
     if (!goodTitle(it.title, src.name)) continue;
+    if (titleShunned(src, it.title)) continue;
     const text = it.title + " " + it.desc;
     if (excluded(text)) continue;
     let team = null, sport = null;
@@ -680,7 +685,7 @@ const activeSources = new Set([...cfg.sources.filter(s => s.on !== false).map(s 
 const srcByName = Object.fromEntries(cfg.sources.map(s => [s.name, s]));
 const ficheOff = a => { const id = String(a.id); return id === "tbc-essai" // fiche d'essai du 09/10/2026 : retirée
   || (id.startsWith("nba-soir-") ? !fiches.nbaSoir : id.startsWith("nba-") ? !fiches.nba : id.startsWith("mlb-soir-") ? !fiches.mlbSoir : id.startsWith("foot-we-") ? !fiches.footWeekend : id.startsWith("classements-") ? !fiches.classementsLundi : id.startsWith("tbc-") ? !fiches.baseballCube : false); };
-for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url) && !ficheOff(a)) byId.set(a.id, AUTO.has(a.source) ? a
+for (const a of prev) if (activeSources.has(a.source) && !urlShunned(srcByName[a.source], a.url) && !titleShunned(srcByName[a.source], a.title) && !ficheOff(a)) byId.set(a.id, AUTO.has(a.source) ? a
   : { ...a, cat: category(a.title), ...(shunned(teamByKey[a.team], a.title + " " + (a.summary || "")) ? { team: null } : {}) }); // article déjà publié : perd l'étiquette de l'équipe, reste dans le sport
 const prevTitles = new Set(prev.map(a => norm(a.title).replace(/[^a-z0-9]/g, "").slice(0, 60)));
 for (const f of fresh) {

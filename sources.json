@@ -64,7 +64,7 @@
       "feeds": ["https://trashtalk.co/equipe-nba/philadelphie-76ers/feed/", "https://trashtalk.co/feed/"], "filterIfFallback": true },
     { "name": "Basket USA", "logo": "basketusa", "scope": "sport:Basket", "keep": "all", "site": "https://www.basketusa.com/",
       "feeds": ["https://www.basketusa.com/feed/"] },
-    { "name": "Le Phocéen", "scope": "om", "site": "https://www.lephoceen.fr/",
+    { "name": "Le Phocéen", "scope": "om", "titleStartExclude": ["talk show", "om au cafe", "commentaires", "commentaire"], "site": "https://www.lephoceen.fr/",
       "feeds": ["https://www.lephoceen.fr/rss.xml", "https://news.google.com/rss/search?q=site:lephoceen.fr+when:7d&hl=fr&gl=FR&ceid=FR:fr", "https://www.bing.com/news/search?q=site%3Alephoceen.fr&format=rss&setlang=fr"] },
     { "name": "L'Équipe · Foot", "logo": "lequipe", "urlExclude": ["/Video/", "/Medias/"], "scope": "sport:Foot", "keep": "all", "site": "https://www.lequipe.fr/Football/",
       "feeds": ["https://dwh.lequipe.fr/api/edito/rss?path=/Football/"] },
