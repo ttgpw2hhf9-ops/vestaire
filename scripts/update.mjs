@@ -240,6 +240,15 @@ async function espn(t) {
       val: soccer ? stat(en, "points") : `${stat(en, "wins") ?? 0}-${stat(en, "losses") ?? 0}`, sort: soccer ? stat(en, "points") : stat(en, "winPercent") ?? 0 }))
       .sort((a, b) => b.sort - a.sort).map((r, i) => ({ rank: i + 1, name: r.name, val: r.val, me: r.me }));
     standings = { title: grp.name || grp.abbreviation || "Classement", unit: soccer ? "pts" : "V-D", rows: trimRows(rows), all: rows, win: win5(rows), n: rows.length };
+    // Autres groupes (ex. NBA : l'autre conférence), pour l'onglet Classement ; jamais « moi », jamais dans la fiche du lundi
+    if (!soccer && groups.length > 1) {
+      const others = groups.filter(gq => gq !== grp && gq.standings?.entries?.length).map(gq => {
+        const rr = gq.standings.entries.map(en => ({ name: en.team.shortDisplayName || en.team.displayName, val: `${stat(en, "wins") ?? 0}-${stat(en, "losses") ?? 0}`, sort: stat(en, "winPercent") ?? 0 }))
+          .sort((a, b) => b.sort - a.sort).map((r, i) => ({ rank: i + 1, name: r.name, val: r.val, me: false }));
+        return { title: gq.name || gq.abbreviation || "Classement", unit: "V-D", all: rr };
+      });
+      if (others.length) standings.others = others;
+    }
   } catch {}
   return { next: next.sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(0, 5), last: last.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)).slice(0, 5), standings };
 }
