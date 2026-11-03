@@ -668,10 +668,9 @@ function teamCard(k){
 // Onglet Classements : le classement complet de chaque compétition suivie ; mes équipes en couleur
 function renderRank(){const T=TEAMS(),seen=new Map();
   for(const k of scopeKeys().filter(k=>T[k])){const st=(D.teamData[k]||{}).standings,rows=st&&(st.all||st.rows);if(!rows||!rows.length)continue;
-    const key=st.title||k;let e=seen.get(key);if(!e){e={st,rows,mine:new Set(),own:{},teams:[]};seen.set(key,e)}e.teams.push(k);rows.filter(r=>r.me).forEach(r=>{e.mine.add(r.name);e.own[r.name]=k})}
-  // Autres groupes publiés par le robot (ex. NBA : l'autre conférence), après les miens, sans surlignage
-  for(const k of scopeKeys().filter(k=>T[k])){const st=(D.teamData[k]||{}).standings;if(!st||!st.others)continue;
-    for(const o of st.others){const key=o.title||k+"-autre";if(seen.has(key)||!o.all||!o.all.length)continue;seen.set(key,{st:o,rows:o.all,mine:new Set(),own:{},teams:[]})}}
+    const key=st.title||k;let e=seen.get(key);if(!e){e={st,rows,mine:new Set(),own:{},teams:[]};seen.set(key,e)}e.teams.push(k);rows.filter(r=>r.me).forEach(r=>{e.mine.add(r.name);e.own[r.name]=k})
+    // Autres groupes publiés par le robot (ex. NBA : l'autre conférence), juste sous le tableau de l'équipe, sans surlignage
+    for(const o of (st.others||[])){const ok=o.title||k+"-autre";if(seen.has(ok)||!o.all||!o.all.length)continue;seen.set(ok,{st:o,rows:o.all,mine:new Set(),own:{},teams:[]})}}
   let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Classements"}</h2>`;
   if(!seen.size)return h+`<p class="empty">Pas de classement pour cette sélection.</p></div>`;
   for(const e of seen.values()){const st=e.st;
