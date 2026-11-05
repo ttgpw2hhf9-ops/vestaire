@@ -148,6 +148,21 @@ function goodTitle(title, srcName) {
 // ---------- articles ----------
 const teams = cfg.teams;
 const teamByKey = Object.fromEntries(teams.map(t => [t.key, t]));
+// Logo d'une équipe ajoutée sans fichier : `data.logoUrl` (PNG) téléchargé UNE fois dans site/logos/<key>.png (+ wm-<key>.png pour le filigrane) ; jamais écrasé
+for (const t of teams) {
+  if (!t.data?.logoUrl) continue;
+  try {
+    const f = `site/logos/${t.key}.png`;
+    if (await fs.access(f).then(() => true, () => false)) continue;
+    const r = await fetch(t.data.logoUrl, { headers: { "User-Agent": UA } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length < 500 || buf.subarray(1, 4).toString() !== "PNG") throw new Error("pas un PNG");
+    await fs.mkdir("site/logos", { recursive: true });
+    await fs.writeFile(f, buf);
+    await fs.writeFile(`site/logos/wm-${t.key}.png`, buf).catch(() => {});
+  } catch (e) { console.log("logo " + t.key + " : " + e.message); }
+}
 const sourceStatus = [];
 const fresh = [];
 
