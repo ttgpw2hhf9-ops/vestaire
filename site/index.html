@@ -573,16 +573,13 @@ async function checkRobot(){if(!D.repo)return;
     else if(stuck)robot={state:"stuck",run:stuck.html_url,since:stuck.created_at,at:now};
     else if(open.length)robot={state:"running",at:now};
     else if(lastOk&&now-Date.parse(lastOk.updated_at)>150*6e4&&isRobotHours())robot={state:"late",since:lastOk.updated_at,at:now,run:`https://github.com/${D.repo}/actions`};
-    else robot={state:"ok",at:now};
-    // Lancement automatique à l'ouverture : GitHub saute souvent les passages programmés. Si le dernier passage réussi date de plus d'1 h (ou si le robot est en pause), l'appli le lance elle-même (jeton requis) ; au plus une fois toutes les 30 min sur cet appareil.
-    if(adm&&!launch.busy&&document.visibilityState==="visible"&&robot.state!=="stuck"&&robot.state!=="running"&&(!lastOk||now-Date.parse(lastOk.updated_at)>60*6e4)&&autoGate(now))setTimeout(launchRobot,0)}
+    else robot={state:"ok",at:now}}
   catch(e){robot={state:"",at:Date.now()}}
   // Tant que le robot tourne : nouvelle vérification toutes les 30 s ; à la fin, rechargement des news
   const was=robotPrev;robotPrev=robot.state;clearTimeout(robotTimer);
   if(robot.state==="running"&&!launch.busy)robotTimer=setTimeout(checkRobot,30e3);
   if(was==="running"&&robot.state!=="running"&&!launch.busy){load(true);return}
   render()}
-const autoGate=now=>{try{const k="vh-auto",t=+localStorage.getItem(k)||0;if(now-t<30*6e4)return false;localStorage.setItem(k,String(now));return true}catch(e){return false}};
 const isRobotHours=()=>{const h=new Date().getUTCHours();return h>=4&&h<=22};
 function statusHtml(){
   if(loadErr&&!loaded)return `<div class="status err">${I.warn}<span>Impossible de charger les news (${esc(loadErr)}). Vérifie ta connexion.</span>${refreshBtn()}</div>`;
