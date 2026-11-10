@@ -643,10 +643,10 @@ function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMaske
   <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
-  const list=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat));
+  const all=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat)),list=all.filter(a=>!isRead(a.id));/* maj-71 : une news lue disparaît de l'inbox (elle reste dans « À lire » si mise de côté) */
   ui.cat="all";const h=statusHtml();
   if(!loaded)return h+`<p class="empty">${loadErr?"":"Chargement…"}</p>`;
-  if(!list.length)return h+`<p class="empty">Rien dans cette sélection pour l'instant.</p>`;
+  if(!list.length)return h+`<p class="empty">${all.length?"Tout est lu ici. ✓":"Rien dans cette sélection pour l'instant."}</p>`;
   return h+grouped(list);
 }
 function renderSaved(){
