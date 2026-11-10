@@ -107,6 +107,24 @@ a.spoil{text-decoration:none}
 .msg.unread time{color:var(--accent);font-weight:700}
 .msg .from .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);flex:none}
 .msg .from time{margin-right:2px}
+/* maj-70 : cartes de news (titre en gras, résumé 2 lignes, vignette à droite) */
+.msg.nw{grid-template-columns:1fr;gap:6px 14px;padding:14px 16px 16px;min-height:0}
+.msg.nw.hasimg{grid-template-columns:1fr 92px}
+.msg.nw .nwtop{background:none;grid-column:1/-1;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);min-width:0}
+.msg.nw .sl{position:relative;flex:none;width:18px;height:18px;border-radius:5px;overflow:hidden;background:var(--c1)}
+.msg.nw .sl b{position:absolute;inset:0;display:grid;place-items:center;font-size:8px;line-height:1;font-weight:700;color:#fff}
+.msg.nw .sl img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.msg.nw .sn{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--fg);opacity:.85}
+.msg.nw .tdot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--c1)}
+.msg.nw .tn{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg.nw .nwtop time{margin-left:auto;flex:none;white-space:nowrap;font-family:inherit;font-size:11.5px;font-weight:400}
+.msg.nw.unread .nwtop time{font-weight:600}
+.msg.nw .nwtop .saved-ico{flex:none}
+.msg.nw .txt{min-width:0;display:block}
+.msg.nw .t{display:block;font-weight:700;font-size:16px;line-height:1.28;color:var(--fg)}
+.msg.nw:not(.unread) .t{color:var(--muted)}
+.msg.nw .s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:5px;font-size:13.5px;line-height:1.4;color:var(--muted)}
+.msg.nw .th{width:92px;height:92px;border-radius:10px;object-fit:cover;margin-top:2px;background:var(--panel-2)}
 .msg:not(.unread) .subj{color:var(--muted);font-weight:400}
 .msg:not(.unread) .crest,.msg:not(.unread) .from{opacity:.55}
 .msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
@@ -286,18 +304,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .msg.sel{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
 .pane-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
 .pane-empty svg{width:56px;height:56px;opacity:.4;display:block;margin:0 auto 12px}
-@media (min-width:900px) and (orientation:landscape){
-  .app{max-width:none;margin:0;display:grid;grid-template-columns:clamp(380px,34vw,460px) 1fr;grid-template-rows:auto auto 1fr auto;box-shadow:none}
-  .app>.top{grid-column:1;grid-row:1}.app>.teams{grid-column:1;grid-row:2}.app>.screen{grid-column:1;grid-row:3}.app>.tabbar{grid-column:1;grid-row:4}
-  .app>.teams:empty{display:none}
-  .sheet{position:relative;inset:auto;grid-column:2;grid-row:1/5;transform:none;visibility:visible;transition:none;border-left:1px solid var(--line);z-index:1}
-  .sheet .back{visibility:hidden}
-  .sheet-body{padding:28px 40px 48px}
-  .sheet .sheet-body>*{max-width:760px;margin-left:auto!important;margin-right:auto!important}
-  .sheet h2{font-size:38px}
-  .sheet-body img{max-height:420px!important;display:block}
-  .screen{border-right:0}
-}
+/* grand écran : même colonne centrée que sur iPhone (volet de droite supprimé, maj-70) */
 
 /* ===== Thème par équipe ===== */
 .app.themed{--accent:var(--th-accent);--bar:var(--th-bar);--bg:var(--th-bar);--panel:color-mix(in srgb,var(--th-accent) 14%,var(--th-bar));--panel-2:color-mix(in srgb,var(--th-accent) 20%,var(--th-bar));--line:rgba(255,255,255,.08);--accent-ink:#fff}
@@ -492,7 +499,7 @@ async function syncSetup(tok){
   }catch(e){syncInfo={busy:false,err:e.message,at:0};render()}}
 
 const $=id=>document.getElementById(id);
-const WIDE=()=>matchMedia("(min-width:900px) and (orientation:landscape)").matches;
+const WIDE=()=>false; // volet de droite supprimé (maj-70)
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const TEAMS=()=>Object.fromEntries(D.teams.map(t=>[t.key,t]));
 function sports(){const s=new Set([...D.teams.map(t=>t.sport),...D.sources.filter(x=>x.scope.startsWith("sport:")).map(x=>x.scope.slice(6))]);return [...SPORT_ORDER.filter(x=>s.has(x)),...[...s].filter(x=>!SPORT_ORDER.includes(x)).sort()]}
@@ -624,7 +631,14 @@ function kickLabel(a,t){if(a.slate)return "1er match";const h=+new Date(t).toLoc
 const miniSide=x=>TEAMS()[x]?crest(x):`<span class="crest" style="--c1:#6b778a;--c2:#9aa5b5" aria-hidden="true">${esc(String(x).slice(0,3).toUpperCase())}</span>`;
 function agExtra(a){if(a.fixture)return `<span class="vsl">${miniSide(a.fixture.home)}<span>vs</span>${miniSide(a.fixture.away)}<span>${esc(a.fixture.comp||"")}</span></span>`;
   if(a.slate||a.cat==="classement")return a.summary?`<span class="sub2">${esc(a.summary)}</span>`:"";return ""}
-function row(a){const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
+const ROBOTSRC=new Set(["Résultats","Agenda","NBA","MLB","Week-end","Baseball Cube","Classements"]); // fiches du robot : gardent l'ancienne ligne et la fiche détaillée
+const isNewsCard=a=>!ROBOTSRC.has(a.source)&&!a.table&&!a.fixture&&!a.games&&!a.slate&&!a.ranks&&!isAg(a);
+const directLink=a=>isNewsCard(a)&&/^https?:\/\//i.test(a.url||"")&&!isMasked(a); // une news s'ouvre directement sur son site (nouvel onglet)
+function agoFr(iso){const d=Date.now()-Date.parse(iso);if(!(d>=0))return hm(iso);const m=Math.floor(d/6e4);if(m<1)return "à l'instant";if(m<60)return "il y a "+m+" min";const h=Math.floor(m/60);if(h<24)return "il y a "+h+" h"+(m%60?" "+String(m%60).padStart(2,"0"):"");return hm(iso)}
+function sumOf(a){let s=(a.summary||"").replace(/\s+/g," ").trim();const t=(a.title||"").trim();if(t&&s.toLowerCase().startsWith(t.toLowerCase()))s=s.slice(t.length).replace(/^[\s:–—.\-]+/,"");return s.length<3?"":s}
+function newsRow(a){const t=TEAMS()[a.team],un=!isRead(a.id),b=BADGE[a.sport],col=t?t.c1:(b?b[1]:"#55657d"),th=t?(t.label||t.name):(a.sport||""),s=sumOf(a),img=/^https?:\/\//i.test(a.image||"")?a.image:"",ini=(a.source.split(" · ")[0].replace(/[^A-Za-zÀ-ÿ]/g,"").slice(0,2)||"?").toUpperCase(),logo=D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source);
+  return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}</button>`}
+function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
   <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
   <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
@@ -1204,7 +1218,7 @@ document.addEventListener("click",e=>{
   else if(d.cat){ui.cat=d.cat}
   else if(d.allread){visibleUnread().forEach(a=>P.read.push(a.id));saveP()}
   else if(d.masked){P.rev=[...(P.rev||[]),d.msg];saveP()}
-  else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
+  else if(d.msg){const art=findArt(d.msg);if(art&&directLink(art)){if(!isRead(d.msg)){P.read.push(d.msg);saveP()}window.open(art.url,"_blank","noopener")}else{ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}
   else if(d.goOrder){ui.view="teams";ui.team="all";ui.reorder=true;ui.hidecfg=false;saveUi();$("screen").scrollTop=0}
