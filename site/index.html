@@ -120,6 +120,7 @@ a.spoil{text-decoration:none}
 .msg.nw .nwtop time{margin-left:auto;flex:none;white-space:nowrap;font-family:inherit;font-size:11.5px;font-weight:400}
 .msg.nw.unread .nwtop time{font-weight:600}
 .msg.nw .nwtop .saved-ico{flex:none}
+.msg.nw .nwtop .saved-ico.unsave{box-sizing:content-box;padding:10px 6px;margin:-10px -2px -10px 0}
 .msg.nw .txt{min-width:0;display:block}
 .msg.nw .t{display:block;font-weight:700;font-size:16px;line-height:1.28;color:var(--fg)}
 .msg.nw:not(.unread) .t{color:var(--muted)}
@@ -637,7 +638,7 @@ const directLink=a=>isNewsCard(a)&&/^https?:\/\//i.test(a.url||"")&&!isMasked(a)
 function agoFr(iso){const d=Date.now()-Date.parse(iso);if(!(d>=0))return hm(iso);const m=Math.floor(d/6e4);if(m<1)return "à l'instant";if(m<60)return "il y a "+m+" min";const h=Math.floor(m/60);if(h<24)return "il y a "+h+" h"+(m%60?" "+String(m%60).padStart(2,"0"):"");return hm(iso)}
 function sumOf(a){let s=(a.summary||"").replace(/\s+/g," ").trim();const t=(a.title||"").trim();if(t&&s.toLowerCase().startsWith(t.toLowerCase()))s=s.slice(t.length).replace(/^[\s:–—.\-]+/,"");return s.length<3?"":s}
 function newsRow(a){const t=TEAMS()[a.team],un=!isRead(a.id),b=BADGE[a.sport],col=t?t.c1:(b?b[1]:"#55657d"),th=t?(t.label||t.name):(a.sport||""),s=sumOf(a),img=/^https?:\/\//i.test(a.image||"")?a.image:"",ini=(a.source.split(" · ")[0].replace(/[^A-Za-zÀ-ÿ]/g,"").slice(0,2)||"?").toUpperCase(),logo=D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source);
-  return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}</button>`}
+  return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico${ui.view==="saved"?" unsave":""}" ${ui.view==="saved"?`data-unsave="${esc(a.id)}" aria-label="Retirer de À lire"`:`aria-label="Mis de côté"`}>${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}</button>`}
 function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
   <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
   <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
@@ -854,17 +855,18 @@ document.addEventListener("touchstart",e=>{if(sw)swBack();if(e.touches.length!==
 document.addEventListener("touchmove",e=>{if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
   if(!sw.lock){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(Math.abs(dy)>=Math.abs(dx)){sw=null;return}
     const dir=dx<0?-1:1;
-    if(dir<0&&!sw.el.classList.contains("unread")){sw=null;return} // gauche : seulement les non lues
+    if(dir<0&&!sw.el.classList.contains("unread")&&ui.view!=="saved"){sw=null;return} // gauche : seulement les non lues (dans « À lire » : retirer, lue ou non)
     if(dir>0&&(ui.view==="saved"||isSaved(sw.el.dataset.msg))){sw=null;return} // droite : rien si déjà mise de côté
     sw.lock=1;sw.dir=dir;sw.bg=document.createElement("div");sw.bg.className="swipe-bg"+(dir>0?" swl":"");
-    if(dir>0)sw.bg.innerHTML=I.bmkFill+"<span>À lire</span>";else sw.bg.textContent="\u2713 Lu";document.body.appendChild(sw.bg)}
+    if(dir>0)sw.bg.innerHTML=I.bmkFill+"<span>À lire</span>";else sw.bg.textContent=ui.view==="saved"?"Retirer":"\u2713 Lu";document.body.appendChild(sw.bg)}
   e.preventDefault();sw.dx=sw.dir<0?Math.min(0,dx):Math.max(0,dx);const r0=sw.el.getBoundingClientRect(),w=Math.abs(sw.dx),left0=r0.left-(parseFloat(sw.el.dataset.swx)||0);
   sw.el.style.transform=`translateX(${sw.dx}px)`;sw.el.dataset.swx=sw.dx;
   Object.assign(sw.bg.style,{top:r0.top+"px",height:r0.height+"px",left:(sw.dir<0?left0+r0.width-w:left0)+"px",width:w+"px"});sw.bg.classList.toggle("go",w>=SW_MIN)},{passive:false});
 document.addEventListener("touchend",()=>{if(!sw)return;if(!sw.lock){sw=null;return}swAt=Date.now();const ok=Math.abs(sw.dx)>=SW_MIN,id=sw.el.dataset.msg,dir=sw.dir;delete sw.el.dataset.swx;
   if(!ok){swBack();return}
   sw.bg.remove();sw=null;
-  if(dir<0){if(!isRead(id)){P.read.push(id);saveP()}}
+  if(dir<0&&ui.view==="saved"){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP()}
+  else if(dir<0){if(!isRead(id)){P.read.push(id);saveP()}}
   else if(!isSaved(id)){const a=findArt(id);if(a){P.saved.push(id);P.savedItems[id]=a;saveP()}}
   render()});
 document.addEventListener("touchcancel",()=>{if(sw){delete sw.el.dataset.swx;swBack()}});
@@ -1205,6 +1207,7 @@ function render(){renderTop();const v=ui.view;
 
 document.addEventListener("click",e=>{
   if(e.target.closest("[data-robotcheck]")){load(true);return}
+  const un=e.target.closest("[data-unsave]");if(un){const id=un.dataset.unsave;P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();render();return}
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(b.id==="reload"||d.refresh){load(true);return}
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
