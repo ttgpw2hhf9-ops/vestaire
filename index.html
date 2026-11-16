@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#15233a">
+<meta name="theme-color" content="#0b100e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Le Vestiaire">
@@ -11,8 +11,6 @@
 <link rel="apple-touch-icon" href="icon-192.png?v=2">
 <link rel="icon" href="icon-192.png?v=2">
 <title>Le Vestiaire</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 html,body{margin:0}
 :root{padding-top:env(safe-area-inset-top,0px)}
@@ -20,22 +18,22 @@ html,body{margin:0}
 /* Layout: phone-first single column — app bar, sport tabs + team chips, scrolling screen, bottom tab bar; message opens as a full-screen sheet. On a desktop the same phone column is centred. */
 :root{
   --outer:#dfe4ec; --bg:#eef1f5; --panel:#ffffff; --panel-2:#f4f6f9; --line:#dde2ea;
-  --fg:#16202e; --muted:#5d6b7e; --accent:#1f5fd1; --accent-ink:#ffffff;
+  --fg:#16202e; --muted:#5d6b7e; --accent:#0d8a5f; --accent-ink:#ffffff;
   --bar:#15233a; --bar-fg:#eef2f8; --bar-muted:#93a2b8;
   --win:#1f8a4c; --loss:#c33a3a; --draw:#8a8f99; --warn:#b7791f;
-  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,system-ui,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --f-mono:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif; /* maj-73 : une seule police (celle de l'appareil) */
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --outer:#070b12; --bg:#0e1522; --panel:#152033; --panel-2:#1a273c; --line:#26354d;
-  --fg:#e6ecf5; --muted:#93a1b6; --accent:#5b8ff0; --accent-ink:#0b1220;
-  --bar:#0a111c; --bar-fg:#e6ecf5; --bar-muted:#7d8ba1;
+  --outer:#060907; --bg:#0b100e; --panel:#131a17; --panel-2:#1a2420; --line:#1f2a25;
+  --fg:#eef1ee; --muted:#9aa8a1; --accent:#34d399; --accent-ink:#06120c;
+  --bar:#0b100e; --bar-fg:#eef1ee; --bar-muted:#7b8a82;
   --win:#3fb56f; --loss:#e06363; --draw:#8d95a3; --warn:#e0a54a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --outer:#070b12; --bg:#0e1522; --panel:#152033; --panel-2:#1a273c; --line:#26354d;
-  --fg:#e6ecf5; --muted:#93a1b6; --accent:#5b8ff0; --accent-ink:#0b1220;
-  --bar:#0a111c; --bar-fg:#e6ecf5; --bar-muted:#7d8ba1;
+  --outer:#060907; --bg:#0b100e; --panel:#131a17; --panel-2:#1a2420; --line:#1f2a25;
+  --fg:#eef1ee; --muted:#9aa8a1; --accent:#34d399; --accent-ink:#06120c;
+  --bar:#0b100e; --bar-fg:#eef1ee; --bar-muted:#7b8a82;
   --win:#3fb56f; --loss:#e06363; --draw:#8d95a3; --warn:#e0a54a; color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -107,11 +105,43 @@ a.spoil{text-decoration:none}
 .msg.unread time{color:var(--accent);font-weight:700}
 .msg .from .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);flex:none}
 .msg .from time{margin-right:2px}
+/* maj-70 : cartes de news (titre en gras, résumé 2 lignes, vignette à droite) */
+.msg.nw{grid-template-columns:1fr;gap:6px 14px;padding:14px 16px 16px;min-height:0}
+.msg.nw.hasimg{grid-template-columns:1fr 92px}
+.msg.nw .nwtop{background:none;grid-column:1/-1;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);min-width:0}
+.msg.nw .sl{position:relative;flex:none;width:18px;height:18px;border-radius:5px;overflow:hidden;background:var(--c1)}
+.msg.nw .sl b{position:absolute;inset:0;display:grid;place-items:center;font-size:8px;line-height:1;font-weight:700;color:#fff}
+.msg.nw .sl img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.msg.nw .sn{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--fg);opacity:.85}
+.msg.nw .tdot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--c1)}
+.msg.nw .tn{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg.nw .nwtop time{margin-left:auto;flex:none;white-space:nowrap;font-family:inherit;font-size:11.5px;font-weight:400}
+.msg.nw.unread .nwtop time{font-weight:600}
+.msg.nw .nwtop .saved-ico{flex:none}
+.msg.nw .nwtop .saved-ico.unsave{box-sizing:content-box;padding:10px 6px;margin:-10px -2px -10px 0}
+.msg.nw .txt{min-width:0;display:block}
+.msg.nw .t{display:block;font-weight:700;font-size:16px;line-height:1.28;color:var(--fg)}
+.msg.nw:not(.unread) .t{color:var(--muted)}
+.msg.nw .s{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:5px;font-size:13.5px;line-height:1.4;color:var(--muted)}
+.msg.nw .th{width:92px;height:92px;border-radius:10px;object-fit:cover;margin-top:2px;background:var(--panel-2)}
 .msg:not(.unread) .subj{color:var(--muted);font-weight:400}
 .msg:not(.unread) .crest,.msg:not(.unread) .from{opacity:.55}
+.msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
+.msg.ag-pre{--c-ag:var(--accent)} .msg.ag-cl{--c-ag:var(--warn)}
+.msg.ag::before{background:var(--c-ag)}
+.msg.ag .subj{font-size:16px}
+.msg.ag:not(.unread) .subj{color:var(--fg);font-weight:500}
+.msg.ag:not(.unread) .crest,.msg.ag:not(.unread) .from{opacity:.85}
+.msg.has-kick .from time{display:none}
+.msg .kick{display:flex;flex-direction:column;align-items:flex-end;line-height:1;margin-top:2px}
+.msg .kick b{font-family:var(--f-mono);font-size:21px;font-weight:700;color:var(--fg)}
+.msg .kick span{font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;color:var(--c-ag);margin-top:4px;white-space:nowrap;text-transform:uppercase}
+.msg .vsl{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.msg .vsl .crest{width:20px;height:20px;font-size:8px;border-radius:6px}
+.msg .sub2{display:block;margin-top:4px;font-size:12px;color:var(--muted);line-height:1.3}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .tag{white-space:nowrap;font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid currentColor}
-.tag.news{color:var(--loss)} .tag.resultat{color:var(--win)} .tag.transfert{color:var(--warn)} .tag.avant-match{color:var(--accent)} .tag.agenda{color:#8b2fd6} :root[data-theme="dark"] .tag.agenda,.app.themed .tag.agenda{color:#c084fc} @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag.agenda{color:#c084fc}} .tag.resume{color:var(--fg)} .tag.journal{color:var(--warn)} .tag.lang{color:var(--muted);margin-left:4px} .tag.abo{color:#b8860b}
+.tag.news{color:var(--loss)} .tag.resultat{color:var(--win)} .tag.transfert{color:var(--warn)} .tag.avant-match{color:var(--accent)} .tag.classement{color:var(--warn)} .tag.resume{color:var(--fg)} .tag.journal{color:var(--warn)} .tag.lang{color:var(--muted);margin-left:4px} .tag.abo{color:#b8860b}
 .empty{padding:32px 16px;color:var(--muted);text-align:center}
 
 .pad{padding:4px 16px 24px}
@@ -175,6 +205,7 @@ table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:ta
 th{font-family:var(--f-mono);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:8px;border-bottom:1px solid var(--line)}
 tr.me td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:600}
+tr.me.tc td{background:color-mix(in srgb,var(--rk) 40%,transparent);font-weight:700}
 .cal-row{display:grid;grid-template-columns:52px 30px 1fr;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .cal-row .when{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
 .cal-row .what{min-width:0}
@@ -272,23 +303,16 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .msg.sel{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
 .pane-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
 .pane-empty svg{width:56px;height:56px;opacity:.4;display:block;margin:0 auto 12px}
-@media (min-width:900px) and (orientation:landscape){
-  .app{max-width:none;margin:0;display:grid;grid-template-columns:clamp(380px,34vw,460px) 1fr;grid-template-rows:auto auto 1fr auto;box-shadow:none}
-  .app>.top{grid-column:1;grid-row:1}.app>.teams{grid-column:1;grid-row:2}.app>.screen{grid-column:1;grid-row:3}.app>.tabbar{grid-column:1;grid-row:4}
-  .app>.teams:empty{display:none}
-  .sheet{position:relative;inset:auto;grid-column:2;grid-row:1/5;transform:none;visibility:visible;transition:none;border-left:1px solid var(--line);z-index:1}
-  .sheet .back{visibility:hidden}
-  .sheet-body{padding:28px 40px 48px}
-  .sheet .sheet-body>*{max-width:760px;margin-left:auto!important;margin-right:auto!important}
-  .sheet h2{font-size:38px}
-  .sheet-body img{max-height:420px!important;display:block}
-  .screen{border-right:0}
-}
+/* grand écran : même colonne centrée que sur iPhone (volet de droite supprimé, maj-70) */
 
 /* ===== Thème par équipe ===== */
 .app.themed{--accent:var(--th-accent);--bar:var(--th-bar);--bg:var(--th-bar);--panel:color-mix(in srgb,var(--th-accent) 14%,var(--th-bar));--panel-2:color-mix(in srgb,var(--th-accent) 20%,var(--th-bar));--line:rgba(255,255,255,.08);--accent-ink:#fff}
 .app.themed .screen{position:relative;z-index:1;background:transparent}
 .app.themed .msg{background:transparent}
+.app.themed .msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
+.card.rk h4{display:flex;align-items:center;gap:8px}.card.rk h4 .crest{width:22px;height:22px;font-size:8px}.card.rk h4>span:nth-child(2){min-width:0}.card.rk .rkpos{margin-left:auto;white-space:nowrap;flex:none;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.rkl{display:grid;grid-template-columns:28px 1fr 56px;align-items:center;padding:8px 8px;border-radius:8px;font-size:15px}.rkl.h{font-family:var(--f-mono);font-size:11px;color:var(--muted);padding-top:2px;padding-bottom:2px}
+.rkl span:first-child,.rkl span:last-child{font-variant-numeric:tabular-nums}.rkl span:last-child{text-align:right}.rkl.me{background:color-mix(in srgb,var(--rk) 38%,transparent);font-weight:700}
 .app.themed .msg.unread{background:color-mix(in srgb,var(--th-accent) 7%,transparent)}
 .app.themed .team[aria-pressed="true"]{background:var(--th-accent);border-color:var(--th-accent);color:#fff}
 .app.themed .team.ico[aria-pressed="true"]{background:transparent;box-shadow:0 0 0 2px var(--th-accent)}
@@ -296,7 +320,7 @@ a.btn{display:flex;align-items:center;justify-content:center;text-decoration:non
 .wm{position:absolute;z-index:0;pointer-events:none;overflow:hidden}
 .wm img{position:absolute;left:50%;top:50%;max-width:none}
 .app.notabs .sports,.app.notabs .teams{display:none}
-.appbar .spoil{width:44px;min-height:44px;border-radius:22px}.appbar #allread{width:80px}.appbar{gap:4px}.brand{font-size:22px}.brand img{width:32px;height:32px}
+.appbar .spoil{width:44px;min-height:44px;border-radius:22px}.appbar #allread{width:44px}.appbar{gap:4px}.brand{font-size:22px}.brand img{width:32px;height:32px}
 @media (max-width:374px){.appbar #allread{width:68px}}
 /* Onglet « À lire » : les news déjà lues gardent le rendu plein (sans changer leur état lu / non lu) */
 .v-saved .msg:not(.unread) .subj{color:var(--fg);font-weight:700}
@@ -380,6 +404,76 @@ select.in{appearance:auto}
 .logo-prev{width:56px;height:56px;border-radius:12px;background:#fff;display:grid;place-items:center;flex:none;overflow:hidden}.logo-prev img{width:100%;height:100%;object-fit:contain}
 .refresh-btn[disabled]{opacity:.6}
 .st-txt{cursor:pointer}
+
+/* ===== maj-73 : nouveau look (style « L'actu », couleur verte) ===== */
+.app .top{position:absolute;top:0;left:0;right:0;z-index:6;background:color-mix(in srgb,var(--bar) 84%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px);border-bottom:1px solid var(--line)}
+.app .screen,.app.themed .screen{position:absolute;inset:0;z-index:1;padding-top:var(--hh,190px);padding-bottom:calc(var(--tb,64px) + 8px);scroll-padding-top:var(--hh,190px)}
+.app .tabbar{position:absolute;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--bar) 86%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px);border-top:1px solid var(--line)}
+.app .appbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"ic ti al mo" "ic st st st";column-gap:10px;row-gap:4px;align-items:center;padding:12px 16px 10px}
+.app .hico{grid-area:ic;width:48px;height:48px;border-radius:12px;box-shadow:0 0 0 1px var(--line)}
+.app .appbar .brand{grid-area:ti;display:block;margin:0;min-width:0;font-family:var(--f-body);font-size:22px;line-height:1.1;font-weight:800;letter-spacing:-.02em;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--bar-fg)}
+.hstat{grid-area:st;display:flex;align-items:center;gap:6px;min-width:0;min-height:22px;font-size:12px;line-height:1.3;color:var(--bar-muted)}
+.hstat .hd{flex:none;width:7px;height:7px;border-radius:50%;background:var(--bar-muted)}
+.hstat .hd.ok,.hstat .hd.run{background:var(--accent)}.hstat .hd.err{background:var(--loss)}
+.hstat .hd.run{animation:hpulse 1.2s ease-in-out infinite}
+@keyframes hpulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.hstat .hd.run{animation:none}}
+.hstat span{min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hstat b{font-weight:600;color:var(--warn)}
+.hstat .lnk{color:var(--accent);font-size:12px}
+.hstat .refresh-btn{flex:none;width:28px;height:28px;margin:-6px 0;border:0;background:none;color:var(--bar-muted)}
+.hstat .refresh-btn svg{width:15px!important;height:15px!important}
+.hpill{grid-area:al;height:34px;padding:0 14px;border-radius:999px;background:var(--panel-2);color:var(--bar-fg);font-size:14px;font-weight:600;white-space:nowrap}
+.hpill[disabled]{opacity:.4;cursor:default}
+.app .appbar #allread{width:auto;min-height:0}
+.hmore{grid-area:mo;width:34px;height:34px;border-radius:50%;background:var(--panel-2);color:var(--bar-fg);display:grid;place-items:center;padding:0}
+.hmore svg{width:18px;height:18px}
+.hmore.on{background:var(--bar-fg);color:var(--bar)}
+.hmenu{position:absolute;right:12px;top:58px;z-index:7;min-width:230px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column}
+.hmenu[hidden],.hmenu .mi[hidden]{display:none}
+.hmenu .mi{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 16px;border-bottom:1px solid var(--line);font-size:15px;color:var(--fg);text-decoration:none;text-align:left}
+.hmenu .mi:last-child{border-bottom:0}
+.hmenu .mi svg{width:20px;height:20px;flex:none;color:var(--accent)}
+.hmenu .mi[aria-current="true"]{color:var(--accent);font-weight:600}
+.app .sports{padding:0 10px;gap:6px}
+.app .sport{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;min-height:40px;padding:0 6px;border-bottom-width:2px}
+.app .sport .n{background:none;color:var(--bar-muted);font-family:var(--f-body);font-size:11.5px;font-weight:700;padding:0;min-width:0}
+.app .sport[aria-pressed="true"] .n{color:var(--accent)}
+.app .teams{background:transparent;border-bottom:0;border-top:1px solid var(--line);padding:10px 16px 12px}
+.app .team .n{font-family:var(--f-body);font-weight:700;font-size:10px}
+.app .team.ico .n{box-shadow:0 0 0 2px var(--bar)}
+.app .team[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.app .team.ico[aria-pressed="true"]{background:transparent;color:inherit;box-shadow:0 0 0 2px var(--accent)}
+.app .team.all[aria-pressed="true"] .n{background:var(--accent-ink);color:var(--accent)}
+.app .day{font-family:var(--f-body);font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted);padding:14px 20px 8px}
+.app .msg{width:calc(100% - 24px);margin:0 12px 8px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.app .msg::before{display:none}
+.app .msg.ag{background:color-mix(in srgb,var(--c-ag) 9%,var(--panel));border-color:color-mix(in srgb,var(--c-ag) 26%,var(--line))}
+.app .msg.sel{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.app.themed .msg{background:color-mix(in srgb,var(--panel) 72%,transparent)}
+.app.themed .msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
+.app .msg.nw.hasimg{grid-template-columns:1fr 84px}
+.app .msg.nw .th{width:84px;height:84px}
+.app .msg .kick b{font-family:var(--f-body);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.app .msg .kick span{font-family:var(--f-body);font-size:11.5px;letter-spacing:0;text-transform:none}
+.app .msg time{font-variant-numeric:tabular-nums}
+.swipe-bg{border-radius:14px}
+.tag{font-family:var(--f-body);font-size:10.5px;font-weight:700;letter-spacing:0;text-transform:none;border:0;border-radius:999px;padding:2px 8px;background:color-mix(in srgb,currentColor 16%,transparent)}
+.h2{font-family:var(--f-body);font-weight:800;text-transform:none;letter-spacing:-.02em}
+.sheet h2{font-family:var(--f-body);font-weight:800;font-size:24px;letter-spacing:-.015em}
+.sec,.card h4,th,.tt th,.cmp th,.ch-cut,.pill,.crop .frame-lbl{text-transform:none;letter-spacing:0}
+.sec,.card h4{font-family:var(--f-body);font-size:13px;font-weight:700}
+.app .tabbar button[aria-current="true"]{color:var(--accent)}
+.app .tabbar svg{width:24px;height:24px}
+.app .tabbar .badge{font-family:var(--f-body);font-weight:700;background:var(--accent);color:var(--accent-ink);min-width:18px;line-height:17px}
+.app .tabbar .badge.alt{background:var(--panel-2);color:var(--fg)}
+.fab{bottom:calc(var(--tb,64px) + 14px)}
+.pendbar{bottom:calc(var(--tb,64px) + 10px)}
+.toast{position:absolute;left:50%;bottom:calc(var(--tb,64px) + 12px);z-index:8;max-width:calc(100% - 24px);display:flex;align-items:center;gap:16px;padding:10px 12px 10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transform:translate(-50%,16px);transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.toast span{overflow:hidden;text-overflow:ellipsis}
+.toast button{flex:none;min-height:32px;padding:0 4px;font-weight:800;color:color-mix(in srgb,var(--accent) 50%,var(--bg))}
+.toast button[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -387,15 +481,20 @@ select.in{appearance:auto}
 <div class="app" id="app">
   <header class="top">
     <div class="appbar">
-      <div class="brand"><img src="icon-192.png?v=2" alt=""><span>Le Vestiaire</span></div>
-      <button class="spoil" id="allread" data-allread="1"></button><a class="spoil" id="journal" target="_blank" rel="noopener" hidden></a><button class="spoil" id="gear" data-view="src" aria-label="Réglages" title="Réglages"></button>
+      <img class="hico" src="icon-192.png?v=2" alt="">
+      <h1 class="brand">Le Vestiaire</h1>
+      <div class="hstat" id="hstat"></div>
+      <button class="hpill" id="allread" data-allread="1">Tout lu</button>
+      <button class="hmore" id="more" data-more="1" aria-label="Plus : Journal, Carnet, Réglages" aria-expanded="false" aria-haspopup="menu"></button>
     </div>
+    <div class="hmenu" id="hmenu" role="menu" hidden><a class="mi" id="journal" role="menuitem" target="_blank" rel="noopener" hidden></a><button class="mi" id="logbtn" role="menuitem" data-view="log"></button><button class="mi" id="gear" role="menuitem" data-view="src"></button></div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
+    <div class="teams" id="teams" role="group" aria-label="Équipe"></div>
   </header>
-  <div class="teams" id="teams" role="group" aria-label="Équipe"></div>
   <div class="wm" id="wm" aria-hidden="true" hidden><img id="wmImg" alt="" onerror="this.parentNode.hidden=true"></div>
   <main class="screen" id="screen"></main>
   <nav class="tabbar" id="tabbar" aria-label="Sections"></nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" type="button">Annuler</button></div>
   <section class="sheet" id="sheet" aria-label="Message" aria-hidden="true">
     <div class="sheet-bar"><button class="back" data-close="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>Retour</button><span style="flex:1"></span><span id="sheetSave"></span></div>
     <div class="sheet-body" id="sheetBody"></div>
@@ -404,10 +503,8 @@ select.in{appearance:auto}
 
 <script>
 // ===== Vestiaire — version GitHub (sans IA). Lit data.json, mis à jour par GitHub Actions. =====
-const CATS={news:"News","avant-match":"Avant-match",resultat:"Résultat",transfert:"Mercato",journal:"Journal"};
-// Les lignes du robot « Agenda » ont leur propre étiquette violette (la catégorie reste avant-match pour les filtres)
-const tagHtml=a=>a.source==="Agenda"?`<span class="tag agenda">À venir</span>`:`<span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span>`;
-const AUTOICO={"NBA":"🏀","MLB":"⚾","Week-end":"⚽","Baseball Cube":"⚾"}; // fiches quotidiennes construites par le robot
+const CATS={news:"News","avant-match":"Avant-match",resultat:"Résultat",classement:"Classement",transfert:"Mercato",journal:"Journal"};
+const AUTOICO={"NBA":"🏀","MLB":"⚾","Week-end":"⚽","Baseball Cube":"⚾","Classements":"🏆"}; // fiches quotidiennes construites par le robot
 const SPORT_ORDER=["Basket","Foot","Baseball","Rugby","F1","Cyclisme"];
 const BADGE={Basket:["BSK","#c4561c","#2a2a2a"],Foot:["FOO","#1d7a3e","#e8e8e8"],Baseball:["BSB","#23395d","#b0262c"],Rugby:["RUG","#7a1f2b","#e8e8e8"],F1:["F1","#d0021b","#1a1a1a"],Cyclisme:["VÉLO","#e0a800","#1a1a1a"]};
 let D={teams:[],articles:[],teamData:{},sources:[],dataStatus:{},updatedAt:null}, loaded=false, loadErr=null, loading=false;
@@ -476,7 +573,7 @@ async function syncSetup(tok){
   }catch(e){syncInfo={busy:false,err:e.message,at:0};render()}}
 
 const $=id=>document.getElementById(id);
-const WIDE=()=>matchMedia("(min-width:900px) and (orientation:landscape)").matches;
+const WIDE=()=>false; // volet de droite supprimé (maj-70)
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const TEAMS=()=>Object.fromEntries(D.teams.map(t=>[t.key,t]));
 function sports(){const s=new Set([...D.teams.map(t=>t.sport),...D.sources.filter(x=>x.scope.startsWith("sport:")).map(x=>x.scope.slice(6))]);return [...SPORT_ORDER.filter(x=>s.has(x)),...[...s].filter(x=>!SPORT_ORDER.includes(x)).sort()]}
@@ -495,7 +592,7 @@ const scopeKeys=()=>isTeamSel()?[ui.team]:teamsOf(ui.sport);
 // Sites affichés comme une pastille (ex. Passion MLB) : "chip": true dans sources.json
 const chipSources=sp=>{const seen=new Set();return D.sources.filter(x=>x.chip&&x.status!=="pause"&&(sp==="all"||x.scope==="sport:"+sp||(TEAMS()[x.scope]&&TEAMS()[x.scope].sport===sp))).filter(x=>!seen.has(x.name)&&seen.add(x.name))};
 const sportOf=a=>{const t=TEAMS()[a.team];return t?t.sport:a.sport};
-function inScope(a){if(isGen())return genSources(ui.sport).includes(a.source)&&sportOf(a)===ui.sport;if(isSrc())return a.source===ui.team.slice(4)&&(ui.sport==="all"||sportOf(a)===ui.sport);if(!a.team||!TEAMS()[a.team])return ui.team==="all"&&(ui.sport==="all"||ui.sport===a.sport);return scopeKeys().includes(a.team)}
+function inScope(a){if(isGen())return genSources(ui.sport).includes(a.source)&&sportOf(a)===ui.sport;if(isSrc())return a.source===ui.team.slice(4)&&(ui.sport==="all"||sportOf(a)===ui.sport);if(!a.team||!TEAMS()[a.team]||TEAMS()[a.team].chip===false)return ui.team==="all"&&(ui.sport==="all"||ui.sport===a.sport);if(ui.team==='all'&&ui.sport!=='all')return false;return scopeKeys().includes(a.team)}
 const isRead=id=>P.read.includes(id),isSaved=id=>P.saved.includes(id);
 // Scores cachés : par sport ("sport:Basket") ou par équipe ("phi"), gardé sur l'appareil
 const SCORE_RE=/(^|[^0-9])\d{1,3}\s?[-–]\s?\d{1,3}([^0-9]|$)/;
@@ -513,7 +610,7 @@ const hm=iso=>new Date(iso).toLocaleTimeString("fr-FR",{timeZone:TZ,hour:"2-digi
 function crest(key,cls=""){const t=TEAMS()[key];
   const fb=t?`<span class="crest ${cls}" style="--c1:${esc(t.c1)};--c2:${esc(t.c2)}" aria-hidden="true">${esc(t.short)}</span>`:`<span class="crest ${cls}" style="--c1:#55657d;--c2:#8796ad" aria-hidden="true">★</span>`;
   if(!t)return fb;
-  return `<span class="crest logo ${cls}" data-fb="${esc(key)}" aria-hidden="true" hidden><img src="logos/${esc(key)}.png" alt="" onload="this.parentNode.hidden=false;this.parentNode.nextElementSibling.remove()" onerror="this.parentNode.remove()"></span>${fb}`}
+  return `<span class="crest logo ${cls}" data-fb="${esc(key)}" aria-hidden="true" hidden><img src="logos/${esc(key)}.png" alt=""${t.logoPad?` style="padding:${+t.logoPad}%;box-sizing:border-box"`:""} onload="this.parentNode.hidden=false;this.parentNode.nextElementSibling.remove()" onerror="this.parentNode.remove()"></span>${fb}`}
 // Logo d'un site : "logo" dans sources.json (ex. "lequipe" -> logos/src-lequipe.png), sinon nom du site
 const srcSlug=n=>{const s=D.sources.find(x=>x.name===n&&x.logo);return s?"src-"+s.logo:srcSlug0(n)};
 const srcSlug0=n=>"src-"+n.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -532,11 +629,13 @@ const I={
  src:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>',
  sync:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ more:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
  checkAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12.5l4 4L14 8M10 16.5l1 1L22 7"/></svg>',
  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',
  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',
  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 8.5 4 9.5 6-.4.8-1.2 2-2.4 3.2M6.4 7.4C4.5 8.7 3.1 10.6 2.5 12c1 2 4.5 6 9.5 6 1.6 0 3-.4 4.3-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
+ rank:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M4 20v-7h4v7M10 20V5h4v15M16 20v-10h4v10"/></svg>',
  log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12 8h4M12 12h4"/></svg>',
  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 2.5h3.4l.5 2.6 1.6.7 2.2-1.5 2.4 2.4-1.5 2.2.7 1.6 2.6.5v3.4l-2.6.5-.7 1.6 1.5 2.2-2.4 2.4-2.2-1.5-1.6.7-.5 2.6h-3.4l-.5-2.6-1.6-.7-2.2 1.5-2.4-2.4 1.5-2.2-.7-1.6-2.6-.5v-3.4l2.6-.5.7-1.6-1.5-2.2 2.4-2.4 2.2 1.5 1.6-.7z"/><circle cx="12" cy="12" r="3.2"/></svg>',
  palette:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.8 1.3-1.7-.4-1.1.3-2.3 1.5-2.3H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15.5" cy="7.5" r="1.2"/></svg>',
@@ -576,14 +675,30 @@ function statusHtml(){
   return `<div class="status ${bad?"err":"ok"}">${bad?I.warn:I.check}<span class="st-txt" data-robotcheck="1" role="button" tabindex="0" title="Toucher pour vérifier l'état du robot">Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${rb}</span>${refreshBtn()}</div>`;
 }
 const refreshBtn=()=>adm?`<button class="refresh-btn" data-launch="1" aria-label="Lancer le robot" title="Lancer le robot (nouvelles news dans 1 à 2 min)" ${launch.busy?"disabled":""}>${launch.busy?"…":I.sync}</button>`:`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news">${loading?"…":I.sync}</button>`;
+// maj-73 : état du robot sous le nom de l'appli (point de couleur + texte court + ↻)
+function hstatHtml(){
+  if(loadErr&&!loaded)return `<i class="hd err"></i><span>Pas de connexion aux news</span>${refreshBtn()}`;
+  if(!D.updatedAt)return `<i class="hd"></i><span>${loading?"Chargement…":""}</span>`;
+  const bad=robot.state==="stuck"||robot.state==="late"||robot.state==="paused",busy=launch.busy||robot.state==="running";
+  const when=(dayKey(D.updatedAt)===dayKey(Date.now())?"":esc(dayLabel(D.updatedAt).toLowerCase())+" ")+"à "+hm(D.updatedAt);
+  const rb=launch.busy||launch.msg?esc(launch.msg||"Robot en cours…")+" · à jour "+when
+    :robot.state==="paused"?`<b>Robot en pause</b> · ${adm?"touche ↻ pour le relancer":`<a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le réactiver</a>`}`
+    :robot.state==="stuck"?`<b>Robot bloqué depuis ${hm(robot.since)}</b> · ${adm?`<button class="lnk" data-unstick="${esc(robot.run)}">le débloquer</button>`:`<a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le débloquer</a>`}`
+    :robot.state==="late"?`<b>Robot en retard</b> · dernier passage ${hm(robot.since)} · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">voir</a>`
+    :robot.state==="running"?"Robot en cours · à jour "+when
+    :(robot.state==="ok"?"Robot OK · ":"")+"à jour "+when;
+  return `<i class="hd ${bad?"err":busy?"run":"ok"}"></i><span class="st-txt" data-robotcheck="1" role="button" tabindex="0" title="Toucher pour vérifier l'état du robot">${rb}</span>${refreshBtn()}`;
+}
+let menuOpen=false;
 function renderTop(){
   const toMark=visibleUnread().length;
-  $("allread").title="Tout marquer comme lu";$("journal").title="Journal L'Équipe";
-  const J=$("journal");if(D.journal&&D.journal.url){J.href=D.journal.url;J.hidden=false;J.setAttribute("aria-label","Ouvrir le "+(D.journal.label||"journal").toLowerCase());J.innerHTML=`${I.news}<span class="lbl">${esc(D.journal.label||"Journal")}</span>`}else J.hidden=true;
+  $("hstat").innerHTML=hstatHtml();
+  const J=$("journal");if(D.journal&&D.journal.url){J.href=D.journal.url;J.hidden=false;J.innerHTML=`${I.news}<span>${esc(D.journal.label||"Journal")}</span>`}else J.hidden=true;
   $("allread").disabled=!toMark;
   $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
-  $("allread").innerHTML=`${I.checkAll}<span class="lbl">Tout lu</span>`;
-  $("gear").innerHTML=I.gear;$("gear").setAttribute("aria-pressed",ADMV.includes(ui.view));
+  $("more").innerHTML=I.more;$("more").setAttribute("aria-expanded",menuOpen);$("more").classList.toggle("on",menuOpen||LOGV.includes(ui.view)||ADMV.includes(ui.view));$("hmenu").hidden=!menuOpen;
+  $("logbtn").innerHTML=`${I.log}<span>Carnet de matchs</span>`;$("logbtn").setAttribute("aria-current",LOGV.includes(ui.view));
+  $("gear").innerHTML=`${I.gear}<span>Réglages</span>`;$("gear").setAttribute("aria-current",ADMV.includes(ui.view));
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(sp.length&&!sp.includes(ui.sport)){ui.sport=sp[0];ui.team="all";saveUi()}
@@ -591,19 +706,37 @@ function renderTop(){
   $("sports").innerHTML=sp.map(s=>[s,s]).map(([k,l])=>`<button class="sport" data-sport="${esc(k)}" aria-pressed="${ui.sport===k}">${esc(l)}${P.hide&&P.hide["sport:"+k]?`<span class="eye" title="Scores cachés">${I.eye}</span>`:""}${n(k)?`<span class="n">${n(k)}</span>`:""}</button>`).join("");
   const T=TEAMS();
   const nb=c=>c?`<span class="n">${c}</span>`:"";
-  $("teams").innerHTML=`<button class="team all" data-team="all" aria-pressed="${ui.team==="all"}">Tout${nb(n(ui.sport))}</button>`+teamsOf(ui.sport).filter(k=>T[k].chip!==false).map(k=>`<button class="team ico" data-team="${esc(k)}" aria-pressed="${ui.team===k}" aria-label="${esc(T[k].label||T[k].name)}" title="${esc(T[k].label||T[k].name)}">${crest(k)}${nb(unread(a=>a.team===k))}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
+  $("teams").innerHTML=`<button class="team all" data-team="all" aria-pressed="${ui.team==="all"}">Tout${nb(unread(a=>sportOf(a)===ui.sport&&!(a.team&&T[a.team]&&T[a.team].chip!==false)))}</button>`+teamsOf(ui.sport).filter(k=>T[k].chip!==false).map(k=>`<button class="team ico" data-team="${esc(k)}" aria-pressed="${ui.team===k}" aria-label="${esc(T[k].label||T[k].name)}" title="${esc(T[k].label||T[k].name)}">${crest(k)}${nb(unread(a=>a.team===k))}</button>`).join("")+chipSources(ui.sport).map(x=>`<button class="team src" data-team="src:${esc(x.name)}" aria-pressed="${ui.team==="src:"+x.name}">${srcCrest(x.name,`<span class="crest" style="--c1:#3a4a63;--c2:#5b6f8f" aria-hidden="true">${esc(x.name.replace(/[^A-Za-z]/g,"").slice(0,3).toUpperCase())}</span>`)}${esc(x.name)}</button>`).join("");
   const u=unread(()=>true),sv=P.saved.length;
-  $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["log","Carnet"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k||(k==="log"&&LOGV.includes(ui.view))}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
+  $("tabbar").innerHTML=[["inbox","Inbox"],["saved","À lire"],["cal","Agenda"],["teams","Équipes"],["rank","Classement"]].map(([k,l])=>`<button data-view="${k}" aria-current="${ui.view===k}">${I[k]}${l}${k==="inbox"&&u?`<span class="badge">${u}</span>`:""}${k==="saved"&&sv?`<span class="badge alt">${sv}</span>`:""}</button>`).join("");
 }
-function row(a){const m=isMasked(a),t=TEAMS()[a.team];return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
-  <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} ${tagHtml(a)}</span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>`}</span>
-  <span class="right">${isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
+// Fiches « agenda » mises en avant : heure du match en grand (avant-match), barre et fond teintés
+const AGSRC=new Set(["Agenda","NBA","MLB","Week-end","Classements"]); // fiches construites par le robot : seules mises en avant (les news « avant-match » des sites gardent l'aspect d'une news)
+const isAg=a=>(a.cat==="avant-match"||a.cat==="classement")&&AGSRC.has(a.source);
+const kickOf=a=>{if(!isAg(a)||a.cat!=="avant-match")return null;const t=a.kick||(a.fixture&&a.fixture.date)||(a.slate&&a.slate.games&&a.slate.games[0]&&a.slate.games[0].t);return t&&!isNaN(Date.parse(t))?t:null};
+const dkey=ms=>new Date(ms).toLocaleDateString("en-CA",{timeZone:TZ});
+function kickLabel(a,t){if(a.slate)return "1er match";const h=+new Date(t).toLocaleTimeString("fr-FR",{timeZone:TZ,hour:"2-digit",hour12:false})%24,kd=dkey(t),now=Date.now();
+  if(kd===dkey(now))return h>=17?"Ce soir":"Aujourd'hui";if(kd===dkey(now+864e5)&&h<6)return "Cette nuit";
+  return new Date(t).toLocaleDateString("fr-FR",{timeZone:TZ,weekday:"short"}).replace(".","")}
+const miniSide=x=>TEAMS()[x]?crest(x):`<span class="crest" style="--c1:#6b778a;--c2:#9aa5b5" aria-hidden="true">${esc(String(x).slice(0,3).toUpperCase())}</span>`;
+function agExtra(a){if(a.fixture)return `<span class="vsl">${miniSide(a.fixture.home)}<span>vs</span>${miniSide(a.fixture.away)}<span>${esc(a.fixture.comp||"")}</span></span>`;
+  if(a.slate||a.cat==="classement")return a.summary?`<span class="sub2">${esc(a.summary)}</span>`:"";return ""}
+const ROBOTSRC=new Set(["Résultats","Agenda","NBA","MLB","Week-end","Baseball Cube","Classements"]); // fiches du robot : gardent l'ancienne ligne et la fiche détaillée
+const isNewsCard=a=>!ROBOTSRC.has(a.source)&&!a.table&&!a.fixture&&!a.games&&!a.slate&&!a.ranks&&!isAg(a);
+const directLink=a=>isNewsCard(a)&&/^https?:\/\//i.test(a.url||"")&&!isMasked(a); // une news s'ouvre directement sur son site (nouvel onglet)
+function agoFr(iso){const d=Date.now()-Date.parse(iso);if(!(d>=0))return hm(iso);const m=Math.floor(d/6e4);if(m<1)return "à l'instant";if(m<60)return "il y a "+m+" min";const h=Math.floor(m/60);if(h<24)return "il y a "+h+" h"+(m%60?" "+String(m%60).padStart(2,"0"):"");return hm(iso)}
+function sumOf(a){let s=(a.summary||"").replace(/\s+/g," ").trim();const t=(a.title||"").trim();if(t&&s.toLowerCase().startsWith(t.toLowerCase()))s=s.slice(t.length).replace(/^[\s:–—.\-]+/,"");return s.length<3?"":s}
+function newsRow(a){const t=TEAMS()[a.team],un=!isRead(a.id),b=BADGE[a.sport],col=t?t.c1:(b?b[1]:"#55657d"),th=t?(t.label||t.name):(a.sport||""),s=sumOf(a),img=/^https?:\/\//i.test(a.image||"")?a.image:"",ini=(a.source.split(" · ")[0].replace(/[^A-Za-zÀ-ÿ]/g,"").slice(0,2)||"?").toUpperCase(),logo=D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source);
+  return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico${ui.view==="saved"?" unsave":""}" ${ui.view==="saved"?`data-unsave="${esc(a.id)}" aria-label="Retirer de À lire"`:`aria-label="Mis de côté"`}>${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}</button>`}
+function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
+  <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
+  <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
-  const list=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat));
-  ui.cat="all";const h=statusHtml();
+  const all=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat)),list=all.filter(a=>!isRead(a.id));/* maj-71 : une news lue disparaît de l'inbox (elle reste dans « À lire » si mise de côté) */
+  ui.cat="all";const h=loadErr&&!loaded?statusHtml():"";
   if(!loaded)return h+`<p class="empty">${loadErr?"":"Chargement…"}</p>`;
-  if(!list.length)return h+`<p class="empty">Rien dans cette sélection pour l'instant.</p>`;
+  if(!list.length)return h+`<p class="empty">${all.length?"Tout est lu ici. ✓":"Rien dans cette sélection pour l'instant."}</p>`;
   return h+grouped(list);
 }
 function renderSaved(){
@@ -634,8 +767,19 @@ function teamCard(k){
    <dl class="kv"><dt>Prochain</dt><dd>${nx?`${nx.label?esc(nx.label):(nx.home?"vs ":"@ ")+esc(nx.opp)}<br><span class="comp">${esc(dayLabel(nx.date))} · ${hm(nx.date)}${nx.comp&&!nx.label?" · "+esc(nx.comp):""}</span>`:`<span class="comp">pas encore connu</span>`}</dd>
    ${hid&&(lastLine||st)?`<dt>Résultats</dt><dd><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Cachés · afficher</button></dd>`:lastLine}</dl>`)+`
    ${d.standingsOnly&&hid&&st?`<p style="margin:10px 0 0"><button class="btn sm" data-revteam="${esc(k)}">${I.eye} Classement caché · afficher</button></p>`:""}
-   ${!hid&&st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me":""}"><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
+   ${!hid&&st&&st.rows&&st.rows.length?`<h4 style="margin:14px 0 6px">${esc(st.title||"Classement")}</h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${st.rows.map(r=>`<tr class="${r.me?"me tc":""}" ${r.me?`style="--rk:${esc(themeOf(k).accent)}"`:""}><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table>`:""}</div>`;
 }
+// Onglet Classements : le classement complet de chaque compétition suivie ; mes équipes en couleur
+function renderRank(){const T=TEAMS(),seen=new Map();
+  for(const k of scopeKeys().filter(k=>T[k])){const st=(D.teamData[k]||{}).standings,rows=st&&(st.all||st.rows);if(!rows||!rows.length)continue;
+    const key=st.title||k;let e=seen.get(key);if(!e){e={st,rows,mine:new Set(),own:{},teams:[]};seen.set(key,e)}e.teams.push(k);rows.filter(r=>r.me).forEach(r=>{e.mine.add(r.name);e.own[r.name]=k})
+    // Autres groupes publiés par le robot (ex. NBA : l'autre conférence), juste sous le tableau de l'équipe, sans surlignage
+    for(const o of (st.others||[])){const ok=o.title||k+"-autre";if(seen.has(ok)||!o.all||!o.all.length)continue;seen.set(ok,{st:o,rows:o.all,mine:new Set(),own:{},teams:[]})}}
+  let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Classements"}</h2>`;
+  if(!seen.size)return h+`<p class="empty">Pas de classement pour cette sélection.</p></div>`;
+  for(const e of seen.values()){const st=e.st;
+    h+=`<div class="card"><h4 style="display:flex;align-items:center;gap:8px;margin:0 0 8px">${e.teams.map(k=>crest(k)).join("")}<span>${esc(st.title||"Classement")}</span></h4><table><thead><tr><th>#</th><th>${esc(st.col||"Équipe")}</th><th>${esc(st.unit||"")}</th></tr></thead><tbody>${e.rows.map(r=>`<tr class="${e.mine.has(r.name)?"me tc":""}" ${e.own[r.name]?`style="--rk:${esc(themeOf(e.own[r.name]).accent)}"`:""}><td>${esc(r.rank)}</td><td>${esc(r.name)}</td><td>${esc(r.val)}</td></tr>`).join("")}</tbody></table></div>`}
+  return h+`</div>`}
 function renderTeams(){
   const T=TEAMS(),sp=isTeamSel()?[T[ui.team].sport]:(ui.sport==="all"?sports():[ui.sport]);
   let h=`<div class="pad"><h2 class="h2">${isTeamSel()?esc(T[ui.team].name):"Mes équipes"}</h2>`;
@@ -695,6 +839,11 @@ function slateCard(a){const T=TEAMS(),s=a.slate,all=s.games||[],n=all.length;
   return `<p class="hint" style="margin:0 0 10px">${esc(s.sub||"")}${s.sub?" · ":""}${n} match${n>1?"s":""} · heure de Paris · équipe à domicile en bas · bilan victoires-défaites</p>`
     +mine.map(g=>`<div class="card gmine"><h4>${crest(g.mine)} Ton équipe · ${g.mineHome?"à domicile":"à l'extérieur"}</h4>${line(g)}</div>`).join("")
     +(rest.length?`<div class="card">${mine.length?`<h4>Les autres matchs</h4>`:""}${rest.map(line).join("")}</div>`:"")}
+// Classements du lundi : un bloc par équipe suivie, 5 lignes, mon équipe en couleur
+function ranksCard(a){const T=TEAMS(),bl=(a.ranks&&a.ranks.blocks)||[];
+  const unitL=b=>b.unit==="pts"?"Pts":b.unit==="V-D"?"V–D":(b.unit||"");
+  return `<p class="hint" style="margin:0 0 10px">${bl.length} classement${bl.length>1?"s":""} · ton équipe en couleur, avec ses voisines au classement</p>`+bl.map(b=>{const me=b.rows.find(r=>r.me),t=T[b.team];if(!me)return "";
+    return `<div class="card rk" style="--rk:${esc(themeOf(b.team).accent)}"><h4>${t?crest(b.team):""}<span>${esc(b.comp)}</span><span class="rkpos">${me.rank}${me.rank===1?"er":"e"} / ${b.n}</span></h4><div class="rkl h"><span></span><span>${esc(b.col||"Équipe")}</span><span>${unitL(b)}</span></div>${b.rows.map(r=>`<div class="rkl${r.me?" me":""}"><span>${esc(r.rank)}</span><span>${esc(r.name)}</span><span>${esc(r.val)}</span></div>`).join("")}</div>`}).join("")}
 // F1 · tableau de chronos (essais, qualifications, sprint, course) : une ligne par pilote ; mes pilotes surlignés
 function chronoCard(a){const tb=a.table,H=tb.head||[],R=tb.rows||[],fav=tb.fav||{},T=TEAMS();
   const iP=Math.max(1,H.findIndex(x=>/pilote/i.test(x))),iC=H.findIndex(x=>/voiture|[ée]curie|[ée]quipe/i.test(x));
@@ -714,13 +863,14 @@ function renderSheet(){
   if(!a){$("sheetSave").innerHTML="";$("sheetBody").innerHTML=WIDE()?`<div class="pane-empty"><div>${I.news}<p>Choisis un article dans la liste<br>pour l'afficher ici.</p><p class="hint">Flèches ↑ ↓ pour passer d'un article à l'autre.</p></div></div>`:"";return}
   const s=isSaved(a.id),t=TEAMS()[a.team];
   $("sheetSave").innerHTML=`<button class="save-btn" data-save="1" aria-pressed="${s}">${s?I.bmkFill:I.saved}${s?"Mis de côté":"Mettre de côté"}</button>`;
-  $("sheetBody").innerHTML=`<div class="head">${aCrest(a,"lg")}<div><div class="t">${t?esc(t.name):a.sport?esc(sportAll(a.sport)):""}</div><div class="meta">${esc(a.source)} · ${esc(dayLabel(a.publishedAt))} ${hm(a.publishedAt)} ${tagHtml(a)}</div></div></div>
+  $("sheetBody").innerHTML=`<div class="head">${aCrest(a,"lg")}<div><div class="t">${t?esc(t.name):a.sport?esc(sportAll(a.sport)):""}</div><div class="meta">${esc(a.source)} · ${esc(dayLabel(a.publishedAt))} ${hm(a.publishedAt)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></div></div></div>
    <h2>${esc(a.title)}</h2>
    ${a.image?`<img src="${esc(a.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;border-radius:12px;margin:0 0 12px;max-height:240px;object-fit:cover" onerror="this.remove()">`:""}
    ${a.summary?`<div class="txt"><p>${esc(a.summary)}</p></div>`:""}
    ${a.fixture?fixtureCard(a.fixture):""}
    ${a.games?gamesCard(a):""}
    ${a.slate?slateCard(a):""}
+   ${a.ranks?ranksCard(a):""}
    ${a.table?chronoCard(a):""}
    ${a.url?`<div class="actions"><a class="btn primary" href="${esc(a.url)}" target="_blank" rel="noopener" style="flex-basis:100%">${a.urlLabel?esc(a.urlLabel):"Lire l'article sur "+esc(a.source)}</a></div>`:""}
    <div class="actions"><button class="btn" id="toggleRead">${isRead(a.id)?"Marquer non lu":"Marquer lu"}</button>${t?`<button class="btn" data-team-open="${esc(a.team)}">Fiche ${esc(t.label||t.name)}</button>`:""}</div>`;
@@ -756,6 +906,10 @@ function applyTheme(){
   const sc=$("screen");wm.hidden=false;Object.assign(wm.style,{top:sc.offsetTop+"px",left:sc.offsetLeft+"px",width:sc.clientWidth+"px",height:sc.clientHeight+"px"});
   const img=$("wmImg"),src=bgSrc(k,th);if(img.getAttribute("src")!==src)img.src=src;img.style.cssText=wmStyle(k,th,sc.clientWidth,sc.clientHeight)}
 new ResizeObserver(()=>applyTheme()).observe(document.getElementById("screen"));
+// maj-73 : l'en-tête et la barre du bas flottent au-dessus de la liste (effet verre) ; la liste réserve leur hauteur
+{const top=document.querySelector(".app .top"),tb=document.getElementById("tabbar"),app=document.getElementById("app");
+ const fit=()=>{app.style.setProperty("--hh",top.offsetHeight+"px");app.style.setProperty("--tb",tb.offsetHeight+"px")};
+ new ResizeObserver(fit).observe(top);new ResizeObserver(fit).observe(tb);fit()}
 // Photos : téléchargées depuis le Gist quand un autre appareil en a mis une plus récente
 async function bgDownload(g){for(const k in (P.theme||{})){const th=P.theme[k];if(th.mode!=="photo"||!th.pt||(LS("vh-bg-t-"+k)||0)>=th.pt)continue;
   const f=g.files&&g.files[bgFile(k)];if(!f)continue;
@@ -787,6 +941,11 @@ function renderLook(){
   ${P.theme[k]&&Object.keys(P.theme[k]).some(x=>x!=="t"&&x!=="pt")?`<div class="actions" style="margin-top:16px"><button class="btn" data-lookreset="1" style="flex:1">Remettre par défaut (couleur et logo du club)</button></div>`:""}</div>`}
 // Glisser l'image dans l'aperçu
 let drag=null;
+// ===== maj-73 : bandeau du bas avec « Annuler » (lu, À lire, retirer, Tout lu) =====
+const snapRS=()=>({read:[...P.read],saved:[...P.saved],savedItems:{...P.savedItems}});
+let toastTimer=null,toastSnap=null;
+function toast(msg,snap){$("toastMsg").textContent=msg;toastSnap=snap||null;$("toastUndo").hidden=!snap;const t=$("toast");t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.classList.remove("show");toastSnap=null},4500)}
+function undoToast(){const sn=toastSnap;toastSnap=null;clearTimeout(toastTimer);$("toast").classList.remove("show");if(!sn)return;P.read=sn.read;P.saved=sn.saved;P.savedItems=sn.savedItems;saveP();render()}
 // ===== Balayage sur une news (tous sports, toutes listes) : vers la gauche = lu, vers la droite = à lire =====
 let sw=null,swAt=0;const SW_MIN=80,SW_EDGE=24; // SW_EDGE : on ignore les gestes partis du bord gauche (geste « retour » du navigateur)
 function swBack(){if(!sw)return;const el=sw.el;if(sw.bg)sw.bg.remove();if(sw.lock){el.style.transition="transform .18s ease";el.style.transform="";setTimeout(()=>{el.style.transition=""},200)}sw=null}
@@ -794,19 +953,29 @@ document.addEventListener("touchstart",e=>{if(sw)swBack();if(e.touches.length!==
 document.addEventListener("touchmove",e=>{if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
   if(!sw.lock){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(Math.abs(dy)>=Math.abs(dx)){sw=null;return}
     const dir=dx<0?-1:1;
-    if(dir<0&&!sw.el.classList.contains("unread")){sw=null;return} // gauche : seulement les non lues
+    if(dir<0&&!sw.el.classList.contains("unread")&&ui.view!=="saved"){sw=null;return} // gauche : seulement les non lues (dans « À lire » : retirer, lue ou non)
     if(dir>0&&(ui.view==="saved"||isSaved(sw.el.dataset.msg))){sw=null;return} // droite : rien si déjà mise de côté
     sw.lock=1;sw.dir=dir;sw.bg=document.createElement("div");sw.bg.className="swipe-bg"+(dir>0?" swl":"");
-    if(dir>0)sw.bg.innerHTML=I.bmkFill+"<span>À lire</span>";else sw.bg.textContent="\u2713 Lu";document.body.appendChild(sw.bg)}
+    if(dir>0)sw.bg.innerHTML=I.bmkFill+"<span>À lire</span>";else sw.bg.textContent=ui.view==="saved"?"Retirer":"\u2713 Lu";document.body.appendChild(sw.bg)}
   e.preventDefault();sw.dx=sw.dir<0?Math.min(0,dx):Math.max(0,dx);const r0=sw.el.getBoundingClientRect(),w=Math.abs(sw.dx),left0=r0.left-(parseFloat(sw.el.dataset.swx)||0);
   sw.el.style.transform=`translateX(${sw.dx}px)`;sw.el.dataset.swx=sw.dx;
   Object.assign(sw.bg.style,{top:r0.top+"px",height:r0.height+"px",left:(sw.dir<0?left0+r0.width-w:left0)+"px",width:w+"px"});sw.bg.classList.toggle("go",w>=SW_MIN)},{passive:false});
 document.addEventListener("touchend",()=>{if(!sw)return;if(!sw.lock){sw=null;return}swAt=Date.now();const ok=Math.abs(sw.dx)>=SW_MIN,id=sw.el.dataset.msg,dir=sw.dir;delete sw.el.dataset.swx;
   if(!ok){swBack();return}
-  sw.bg.remove();sw=null;
-  if(dir<0){if(!isRead(id)){P.read.push(id);saveP()}}
-  else if(!isSaved(id)){const a=findArt(id);if(a){P.saved.push(id);P.savedItems[id]=a;saveP()}}
-  render()});
+  const el=sw.el,bg=sw.bg;sw=null;const sn=snapRS();let msg="";
+  if(dir<0&&ui.view==="saved"){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();msg="Retiré de « À lire »"}
+  else if(dir<0){if(!isRead(id)){P.read.push(id);saveP();msg="Marquée comme lue"}}
+  else if(!isSaved(id)){const a=findArt(id);if(a){P.saved.push(id);P.savedItems[id]=a;saveP();msg="Mise de côté dans « À lire »"}}
+  if(msg)toast(msg,sn);
+  // maj-73 : la carte qui disparaît glisse hors de l'écran puis se replie en douceur
+  const gone=dir<0&&(ui.view==="inbox"||ui.view==="saved");
+  if(!gone||matchMedia("(prefers-reduced-motion: reduce)").matches){bg.remove();el.style.transform="";render();return}
+  bg.style.transition="opacity .16s";bg.style.opacity="0";
+  el.style.transition="transform .16s ease-in";el.style.transform="translateX(-110%)";
+  setTimeout(()=>{bg.remove();el.style.height=el.offsetHeight+"px";el.style.overflow="hidden";void el.offsetHeight;
+    el.style.transition="height .2s ease,margin .2s ease,padding .2s ease,opacity .2s,border-width .2s";
+    Object.assign(el.style,{height:"0px",marginTop:"0px",marginBottom:"0px",paddingTop:"0px",paddingBottom:"0px",borderWidth:"0px",opacity:"0"});
+    setTimeout(render,210)},160)});
 document.addEventListener("touchcancel",()=>{if(sw){delete sw.el.dataset.swx;swBack()}});
 document.addEventListener("click",e=>{if(Date.now()-swAt<400){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("pointerdown",e=>{const c=e.target.closest("#crop");if(!c)return;const th=themeOf(ui.lookKey);drag={x:e.clientX,y:e.clientY,dx:th.dx,dy:th.dy,W:c.clientWidth,H:c.clientHeight};c.setPointerCapture(e.pointerId);e.preventDefault()});
@@ -1139,12 +1308,16 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="kwIn"
 
 function render(){renderTop();const v=ui.view;
   $("app").classList.toggle("notabs",LOGV.includes(v)||ADMV.includes(v));
-  $("screen").innerHTML=v==="srcman"?renderSrcMan():v==="teamman"?renderTeamMan():v==="srcform"?renderSrcForm():v==="clubform"?renderClubForm():v==="robotcfg"?renderRobotCfg():v==="saved"?renderSaved():v==="cal"?renderCal():v==="teams"?renderTeams():v==="src"?renderSources():v==="log"?renderLog():v==="logform"?renderLogForm():v==="seasons"?renderSeasons():v==="compare"?renderCompare():v==="look"?renderLook():renderInbox();
+  $("screen").innerHTML=v==="srcman"?renderSrcMan():v==="teamman"?renderTeamMan():v==="srcform"?renderSrcForm():v==="clubform"?renderClubForm():v==="robotcfg"?renderRobotCfg():v==="saved"?renderSaved():v==="cal"?renderCal():v==="teams"?renderTeams():v==="rank"?renderRank():v==="src"?renderSources():v==="log"?renderLog():v==="logform"?renderLogForm():v==="seasons"?renderSeasons():v==="compare"?renderCompare():v==="look"?renderLook():renderInbox();
   $("screen").classList.toggle("v-saved",v==="saved");
   renderSheet();applyTheme()}
 
 document.addEventListener("click",e=>{
+  if(e.target.closest("[data-more]")){menuOpen=!menuOpen;renderTop();return}
+  if(e.target.closest("#toastUndo")){undoToast();return}
+  if(menuOpen){menuOpen=false;$("hmenu").hidden=true;$("more").setAttribute("aria-expanded","false");if(!e.target.closest("#hmenu")){renderTop();return}}
   if(e.target.closest("[data-robotcheck]")){load(true);return}
+  const un=e.target.closest("[data-unsave]");if(un){const id=un.dataset.unsave,sn=snapRS();P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();render();toast("Retiré de « À lire »",sn);return}
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(b.id==="reload"||d.refresh){load(true);return}
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
@@ -1156,9 +1329,9 @@ document.addEventListener("click",e=>{
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
   else if(d.cat){ui.cat=d.cat}
-  else if(d.allread){visibleUnread().forEach(a=>P.read.push(a.id));saveP()}
+  else if(d.allread){const l=visibleUnread();if(!l.length)return;const sn=snapRS();l.forEach(a=>P.read.push(a.id));saveP();render();toast(l.length>1?l.length+" news marquées comme lues":"1 news marquée comme lue",sn);return}
   else if(d.masked){P.rev=[...(P.rev||[]),d.msg];saveP()}
-  else if(d.msg){ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}
+  else if(d.msg){const art=findArt(d.msg);if(art&&directLink(art)){if(!isRead(d.msg)){P.read.push(d.msg);saveP()}window.open(art.url,"_blank","noopener")}else{ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}}
   else if(d.close){ui.open=null}
   else if(d.save){const id=ui.open;if(isSaved(id)){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id]}else{P.saved.push(id);P.savedItems[id]=findArt(id)}saveP()}
   else if(d.goOrder){ui.view="teams";ui.team="all";ui.reorder=true;ui.hidecfg=false;saveUi();$("screen").scrollTop=0}
