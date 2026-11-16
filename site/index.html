@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#15233a">
+<meta name="theme-color" content="#0b100e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Le Vestiaire">
@@ -11,8 +11,6 @@
 <link rel="apple-touch-icon" href="icon-192.png?v=2">
 <link rel="icon" href="icon-192.png?v=2">
 <title>Le Vestiaire</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 html,body{margin:0}
 :root{padding-top:env(safe-area-inset-top,0px)}
@@ -20,22 +18,22 @@ html,body{margin:0}
 /* Layout: phone-first single column — app bar, sport tabs + team chips, scrolling screen, bottom tab bar; message opens as a full-screen sheet. On a desktop the same phone column is centred. */
 :root{
   --outer:#dfe4ec; --bg:#eef1f5; --panel:#ffffff; --panel-2:#f4f6f9; --line:#dde2ea;
-  --fg:#16202e; --muted:#5d6b7e; --accent:#1f5fd1; --accent-ink:#ffffff;
+  --fg:#16202e; --muted:#5d6b7e; --accent:#0d8a5f; --accent-ink:#ffffff;
   --bar:#15233a; --bar-fg:#eef2f8; --bar-muted:#93a2b8;
   --win:#1f8a4c; --loss:#c33a3a; --draw:#8a8f99; --warn:#b7791f;
-  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,system-ui,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --f-mono:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif; /* maj-73 : une seule police (celle de l'appareil) */
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --outer:#070b12; --bg:#0e1522; --panel:#152033; --panel-2:#1a273c; --line:#26354d;
-  --fg:#e6ecf5; --muted:#93a1b6; --accent:#5b8ff0; --accent-ink:#0b1220;
-  --bar:#0a111c; --bar-fg:#e6ecf5; --bar-muted:#7d8ba1;
+  --outer:#060907; --bg:#0b100e; --panel:#131a17; --panel-2:#1a2420; --line:#1f2a25;
+  --fg:#eef1ee; --muted:#9aa8a1; --accent:#34d399; --accent-ink:#06120c;
+  --bar:#0b100e; --bar-fg:#eef1ee; --bar-muted:#7b8a82;
   --win:#3fb56f; --loss:#e06363; --draw:#8d95a3; --warn:#e0a54a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --outer:#070b12; --bg:#0e1522; --panel:#152033; --panel-2:#1a273c; --line:#26354d;
-  --fg:#e6ecf5; --muted:#93a1b6; --accent:#5b8ff0; --accent-ink:#0b1220;
-  --bar:#0a111c; --bar-fg:#e6ecf5; --bar-muted:#7d8ba1;
+  --outer:#060907; --bg:#0b100e; --panel:#131a17; --panel-2:#1a2420; --line:#1f2a25;
+  --fg:#eef1ee; --muted:#9aa8a1; --accent:#34d399; --accent-ink:#06120c;
+  --bar:#0b100e; --bar-fg:#eef1ee; --bar-muted:#7b8a82;
   --win:#3fb56f; --loss:#e06363; --draw:#8d95a3; --warn:#e0a54a; color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -406,6 +404,76 @@ select.in{appearance:auto}
 .logo-prev{width:56px;height:56px;border-radius:12px;background:#fff;display:grid;place-items:center;flex:none;overflow:hidden}.logo-prev img{width:100%;height:100%;object-fit:contain}
 .refresh-btn[disabled]{opacity:.6}
 .st-txt{cursor:pointer}
+
+/* ===== maj-73 : nouveau look (style « L'actu », couleur verte) ===== */
+.app .top{position:absolute;top:0;left:0;right:0;z-index:6;background:color-mix(in srgb,var(--bar) 84%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px);border-bottom:1px solid var(--line)}
+.app .screen,.app.themed .screen{position:absolute;inset:0;z-index:1;padding-top:var(--hh,190px);padding-bottom:calc(var(--tb,64px) + 8px);scroll-padding-top:var(--hh,190px)}
+.app .tabbar{position:absolute;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--bar) 86%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px);border-top:1px solid var(--line)}
+.app .appbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"ic ti al mo" "ic st st st";column-gap:10px;row-gap:4px;align-items:center;padding:12px 16px 10px}
+.app .hico{grid-area:ic;width:48px;height:48px;border-radius:12px;box-shadow:0 0 0 1px var(--line)}
+.app .appbar .brand{grid-area:ti;display:block;margin:0;min-width:0;font-family:var(--f-body);font-size:22px;line-height:1.1;font-weight:800;letter-spacing:-.02em;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--bar-fg)}
+.hstat{grid-area:st;display:flex;align-items:center;gap:6px;min-width:0;min-height:22px;font-size:12px;line-height:1.3;color:var(--bar-muted)}
+.hstat .hd{flex:none;width:7px;height:7px;border-radius:50%;background:var(--bar-muted)}
+.hstat .hd.ok,.hstat .hd.run{background:var(--accent)}.hstat .hd.err{background:var(--loss)}
+.hstat .hd.run{animation:hpulse 1.2s ease-in-out infinite}
+@keyframes hpulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.hstat .hd.run{animation:none}}
+.hstat span{min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hstat b{font-weight:600;color:var(--warn)}
+.hstat .lnk{color:var(--accent);font-size:12px}
+.hstat .refresh-btn{flex:none;width:28px;height:28px;margin:-6px 0;border:0;background:none;color:var(--bar-muted)}
+.hstat .refresh-btn svg{width:15px!important;height:15px!important}
+.hpill{grid-area:al;height:34px;padding:0 14px;border-radius:999px;background:var(--panel-2);color:var(--bar-fg);font-size:14px;font-weight:600;white-space:nowrap}
+.hpill[disabled]{opacity:.4;cursor:default}
+.app .appbar #allread{width:auto;min-height:0}
+.hmore{grid-area:mo;width:34px;height:34px;border-radius:50%;background:var(--panel-2);color:var(--bar-fg);display:grid;place-items:center;padding:0}
+.hmore svg{width:18px;height:18px}
+.hmore.on{background:var(--bar-fg);color:var(--bar)}
+.hmenu{position:absolute;right:12px;top:58px;z-index:7;min-width:230px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column}
+.hmenu[hidden],.hmenu .mi[hidden]{display:none}
+.hmenu .mi{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 16px;border-bottom:1px solid var(--line);font-size:15px;color:var(--fg);text-decoration:none;text-align:left}
+.hmenu .mi:last-child{border-bottom:0}
+.hmenu .mi svg{width:20px;height:20px;flex:none;color:var(--accent)}
+.hmenu .mi[aria-current="true"]{color:var(--accent);font-weight:600}
+.app .sports{padding:0 10px;gap:6px}
+.app .sport{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;min-height:40px;padding:0 6px;border-bottom-width:2px}
+.app .sport .n{background:none;color:var(--bar-muted);font-family:var(--f-body);font-size:11.5px;font-weight:700;padding:0;min-width:0}
+.app .sport[aria-pressed="true"] .n{color:var(--accent)}
+.app .teams{background:transparent;border-bottom:0;border-top:1px solid var(--line);padding:10px 16px 12px}
+.app .team .n{font-family:var(--f-body);font-weight:700;font-size:10px}
+.app .team.ico .n{box-shadow:0 0 0 2px var(--bar)}
+.app .team[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.app .team.ico[aria-pressed="true"]{background:transparent;color:inherit;box-shadow:0 0 0 2px var(--accent)}
+.app .team.all[aria-pressed="true"] .n{background:var(--accent-ink);color:var(--accent)}
+.app .day{font-family:var(--f-body);font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted);padding:14px 20px 8px}
+.app .msg{width:calc(100% - 24px);margin:0 12px 8px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.app .msg::before{display:none}
+.app .msg.ag{background:color-mix(in srgb,var(--c-ag) 9%,var(--panel));border-color:color-mix(in srgb,var(--c-ag) 26%,var(--line))}
+.app .msg.sel{background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.app.themed .msg{background:color-mix(in srgb,var(--panel) 72%,transparent)}
+.app.themed .msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
+.app .msg.nw.hasimg{grid-template-columns:1fr 84px}
+.app .msg.nw .th{width:84px;height:84px}
+.app .msg .kick b{font-family:var(--f-body);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.app .msg .kick span{font-family:var(--f-body);font-size:11.5px;letter-spacing:0;text-transform:none}
+.app .msg time{font-variant-numeric:tabular-nums}
+.swipe-bg{border-radius:14px}
+.tag{font-family:var(--f-body);font-size:10.5px;font-weight:700;letter-spacing:0;text-transform:none;border:0;border-radius:999px;padding:2px 8px;background:color-mix(in srgb,currentColor 16%,transparent)}
+.h2{font-family:var(--f-body);font-weight:800;text-transform:none;letter-spacing:-.02em}
+.sheet h2{font-family:var(--f-body);font-weight:800;font-size:24px;letter-spacing:-.015em}
+.sec,.card h4,th,.tt th,.cmp th,.ch-cut,.pill,.crop .frame-lbl{text-transform:none;letter-spacing:0}
+.sec,.card h4{font-family:var(--f-body);font-size:13px;font-weight:700}
+.app .tabbar button[aria-current="true"]{color:var(--accent)}
+.app .tabbar svg{width:24px;height:24px}
+.app .tabbar .badge{font-family:var(--f-body);font-weight:700;background:var(--accent);color:var(--accent-ink);min-width:18px;line-height:17px}
+.app .tabbar .badge.alt{background:var(--panel-2);color:var(--fg)}
+.fab{bottom:calc(var(--tb,64px) + 14px)}
+.pendbar{bottom:calc(var(--tb,64px) + 10px)}
+.toast{position:absolute;left:50%;bottom:calc(var(--tb,64px) + 12px);z-index:8;max-width:calc(100% - 24px);display:flex;align-items:center;gap:16px;padding:10px 12px 10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.45);opacity:0;pointer-events:none;transform:translate(-50%,16px);transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.toast span{overflow:hidden;text-overflow:ellipsis}
+.toast button{flex:none;min-height:32px;padding:0 4px;font-weight:800;color:color-mix(in srgb,var(--accent) 50%,var(--bg))}
+.toast button[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -413,15 +481,20 @@ select.in{appearance:auto}
 <div class="app" id="app">
   <header class="top">
     <div class="appbar">
-      <div class="brand"><img src="icon-192.png?v=2" alt=""><span>Le Vestiaire</span></div>
-      <button class="spoil" id="allread" data-allread="1"></button><a class="spoil" id="journal" target="_blank" rel="noopener" hidden></a><button class="spoil" id="logbtn" data-view="log" aria-label="Carnet de matchs" title="Carnet de matchs"></button><button class="spoil" id="gear" data-view="src" aria-label="Réglages" title="Réglages"></button>
+      <img class="hico" src="icon-192.png?v=2" alt="">
+      <h1 class="brand">Le Vestiaire</h1>
+      <div class="hstat" id="hstat"></div>
+      <button class="hpill" id="allread" data-allread="1">Tout lu</button>
+      <button class="hmore" id="more" data-more="1" aria-label="Plus : Journal, Carnet, Réglages" aria-expanded="false" aria-haspopup="menu"></button>
     </div>
+    <div class="hmenu" id="hmenu" role="menu" hidden><a class="mi" id="journal" role="menuitem" target="_blank" rel="noopener" hidden></a><button class="mi" id="logbtn" role="menuitem" data-view="log"></button><button class="mi" id="gear" role="menuitem" data-view="src"></button></div>
     <nav class="sports" id="sports" aria-label="Sport"></nav>
+    <div class="teams" id="teams" role="group" aria-label="Équipe"></div>
   </header>
-  <div class="teams" id="teams" role="group" aria-label="Équipe"></div>
   <div class="wm" id="wm" aria-hidden="true" hidden><img id="wmImg" alt="" onerror="this.parentNode.hidden=true"></div>
   <main class="screen" id="screen"></main>
   <nav class="tabbar" id="tabbar" aria-label="Sections"></nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" type="button">Annuler</button></div>
   <section class="sheet" id="sheet" aria-label="Message" aria-hidden="true">
     <div class="sheet-bar"><button class="back" data-close="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>Retour</button><span style="flex:1"></span><span id="sheetSave"></span></div>
     <div class="sheet-body" id="sheetBody"></div>
@@ -556,6 +629,7 @@ const I={
  src:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>',
  sync:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ more:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
  checkAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12.5l4 4L14 8M10 16.5l1 1L22 7"/></svg>',
  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',
  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',
@@ -601,15 +675,30 @@ function statusHtml(){
   return `<div class="status ${bad?"err":"ok"}">${bad?I.warn:I.check}<span class="st-txt" data-robotcheck="1" role="button" tabindex="0" title="Toucher pour vérifier l'état du robot">Mis à jour ${dayKey(D.updatedAt)===dayKey(Date.now())?"aujourd'hui":esc(dayLabel(D.updatedAt).toLowerCase())} à ${hm(D.updatedAt)}${rb}</span>${refreshBtn()}</div>`;
 }
 const refreshBtn=()=>adm?`<button class="refresh-btn" data-launch="1" aria-label="Lancer le robot" title="Lancer le robot (nouvelles news dans 1 à 2 min)" ${launch.busy?"disabled":""}>${launch.busy?"…":I.sync}</button>`:`<button class="refresh-btn" data-refresh="1" aria-label="Recharger les news" title="Recharger les news">${loading?"…":I.sync}</button>`;
+// maj-73 : état du robot sous le nom de l'appli (point de couleur + texte court + ↻)
+function hstatHtml(){
+  if(loadErr&&!loaded)return `<i class="hd err"></i><span>Pas de connexion aux news</span>${refreshBtn()}`;
+  if(!D.updatedAt)return `<i class="hd"></i><span>${loading?"Chargement…":""}</span>`;
+  const bad=robot.state==="stuck"||robot.state==="late"||robot.state==="paused",busy=launch.busy||robot.state==="running";
+  const when=(dayKey(D.updatedAt)===dayKey(Date.now())?"":esc(dayLabel(D.updatedAt).toLowerCase())+" ")+"à "+hm(D.updatedAt);
+  const rb=launch.busy||launch.msg?esc(launch.msg||"Robot en cours…")+" · à jour "+when
+    :robot.state==="paused"?`<b>Robot en pause</b> · ${adm?"touche ↻ pour le relancer":`<a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le réactiver</a>`}`
+    :robot.state==="stuck"?`<b>Robot bloqué depuis ${hm(robot.since)}</b> · ${adm?`<button class="lnk" data-unstick="${esc(robot.run)}">le débloquer</button>`:`<a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">le débloquer</a>`}`
+    :robot.state==="late"?`<b>Robot en retard</b> · dernier passage ${hm(robot.since)} · <a class="lnk" href="${esc(robot.run)}" target="_blank" rel="noopener">voir</a>`
+    :robot.state==="running"?"Robot en cours · à jour "+when
+    :(robot.state==="ok"?"Robot OK · ":"")+"à jour "+when;
+  return `<i class="hd ${bad?"err":busy?"run":"ok"}"></i><span class="st-txt" data-robotcheck="1" role="button" tabindex="0" title="Toucher pour vérifier l'état du robot">${rb}</span>${refreshBtn()}`;
+}
+let menuOpen=false;
 function renderTop(){
   const toMark=visibleUnread().length;
-  $("allread").title="Tout marquer comme lu";$("journal").title="Journal L'Équipe";
-  const J=$("journal");if(D.journal&&D.journal.url){J.href=D.journal.url;J.hidden=false;J.setAttribute("aria-label","Ouvrir le "+(D.journal.label||"journal").toLowerCase());J.innerHTML=`${I.news}<span class="lbl">${esc(D.journal.label||"Journal")}</span>`}else J.hidden=true;
+  $("hstat").innerHTML=hstatHtml();
+  const J=$("journal");if(D.journal&&D.journal.url){J.href=D.journal.url;J.hidden=false;J.innerHTML=`${I.news}<span>${esc(D.journal.label||"Journal")}</span>`}else J.hidden=true;
   $("allread").disabled=!toMark;
   $("allread").setAttribute("aria-label",toMark?`Marquer ${toMark} news comme lues`:"Tout est lu");
-  $("allread").innerHTML=`${I.checkAll}<span class="lbl">Tout lu</span>`;
-  $("logbtn").innerHTML=I.log;$("logbtn").setAttribute("aria-pressed",LOGV.includes(ui.view));
-  $("gear").innerHTML=I.gear;$("gear").setAttribute("aria-pressed",ADMV.includes(ui.view));
+  $("more").innerHTML=I.more;$("more").setAttribute("aria-expanded",menuOpen);$("more").classList.toggle("on",menuOpen||LOGV.includes(ui.view)||ADMV.includes(ui.view));$("hmenu").hidden=!menuOpen;
+  $("logbtn").innerHTML=`${I.log}<span>Carnet de matchs</span>`;$("logbtn").setAttribute("aria-current",LOGV.includes(ui.view));
+  $("gear").innerHTML=`${I.gear}<span>Réglages</span>`;$("gear").setAttribute("aria-current",ADMV.includes(ui.view));
   const unread=pred=>D.articles.filter(a=>!isRead(a.id)&&pred(a)).length;
   const n=sp=>unread(a=>sp==="all"||sportOf(a)===sp);
   const sp=sports();if(sp.length&&!sp.includes(ui.sport)){ui.sport=sp[0];ui.team="all";saveUi()}
@@ -645,7 +734,7 @@ function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMaske
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
   const all=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat)),list=all.filter(a=>!isRead(a.id));/* maj-71 : une news lue disparaît de l'inbox (elle reste dans « À lire » si mise de côté) */
-  ui.cat="all";const h=statusHtml();
+  ui.cat="all";const h=loadErr&&!loaded?statusHtml():"";
   if(!loaded)return h+`<p class="empty">${loadErr?"":"Chargement…"}</p>`;
   if(!list.length)return h+`<p class="empty">${all.length?"Tout est lu ici. ✓":"Rien dans cette sélection pour l'instant."}</p>`;
   return h+grouped(list);
@@ -817,6 +906,10 @@ function applyTheme(){
   const sc=$("screen");wm.hidden=false;Object.assign(wm.style,{top:sc.offsetTop+"px",left:sc.offsetLeft+"px",width:sc.clientWidth+"px",height:sc.clientHeight+"px"});
   const img=$("wmImg"),src=bgSrc(k,th);if(img.getAttribute("src")!==src)img.src=src;img.style.cssText=wmStyle(k,th,sc.clientWidth,sc.clientHeight)}
 new ResizeObserver(()=>applyTheme()).observe(document.getElementById("screen"));
+// maj-73 : l'en-tête et la barre du bas flottent au-dessus de la liste (effet verre) ; la liste réserve leur hauteur
+{const top=document.querySelector(".app .top"),tb=document.getElementById("tabbar"),app=document.getElementById("app");
+ const fit=()=>{app.style.setProperty("--hh",top.offsetHeight+"px");app.style.setProperty("--tb",tb.offsetHeight+"px")};
+ new ResizeObserver(fit).observe(top);new ResizeObserver(fit).observe(tb);fit()}
 // Photos : téléchargées depuis le Gist quand un autre appareil en a mis une plus récente
 async function bgDownload(g){for(const k in (P.theme||{})){const th=P.theme[k];if(th.mode!=="photo"||!th.pt||(LS("vh-bg-t-"+k)||0)>=th.pt)continue;
   const f=g.files&&g.files[bgFile(k)];if(!f)continue;
@@ -848,6 +941,11 @@ function renderLook(){
   ${P.theme[k]&&Object.keys(P.theme[k]).some(x=>x!=="t"&&x!=="pt")?`<div class="actions" style="margin-top:16px"><button class="btn" data-lookreset="1" style="flex:1">Remettre par défaut (couleur et logo du club)</button></div>`:""}</div>`}
 // Glisser l'image dans l'aperçu
 let drag=null;
+// ===== maj-73 : bandeau du bas avec « Annuler » (lu, À lire, retirer, Tout lu) =====
+const snapRS=()=>({read:[...P.read],saved:[...P.saved],savedItems:{...P.savedItems}});
+let toastTimer=null,toastSnap=null;
+function toast(msg,snap){$("toastMsg").textContent=msg;toastSnap=snap||null;$("toastUndo").hidden=!snap;const t=$("toast");t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.classList.remove("show");toastSnap=null},4500)}
+function undoToast(){const sn=toastSnap;toastSnap=null;clearTimeout(toastTimer);$("toast").classList.remove("show");if(!sn)return;P.read=sn.read;P.saved=sn.saved;P.savedItems=sn.savedItems;saveP();render()}
 // ===== Balayage sur une news (tous sports, toutes listes) : vers la gauche = lu, vers la droite = à lire =====
 let sw=null,swAt=0;const SW_MIN=80,SW_EDGE=24; // SW_EDGE : on ignore les gestes partis du bord gauche (geste « retour » du navigateur)
 function swBack(){if(!sw)return;const el=sw.el;if(sw.bg)sw.bg.remove();if(sw.lock){el.style.transition="transform .18s ease";el.style.transform="";setTimeout(()=>{el.style.transition=""},200)}sw=null}
@@ -864,11 +962,20 @@ document.addEventListener("touchmove",e=>{if(!sw)return;const t=e.touches[0],dx=
   Object.assign(sw.bg.style,{top:r0.top+"px",height:r0.height+"px",left:(sw.dir<0?left0+r0.width-w:left0)+"px",width:w+"px"});sw.bg.classList.toggle("go",w>=SW_MIN)},{passive:false});
 document.addEventListener("touchend",()=>{if(!sw)return;if(!sw.lock){sw=null;return}swAt=Date.now();const ok=Math.abs(sw.dx)>=SW_MIN,id=sw.el.dataset.msg,dir=sw.dir;delete sw.el.dataset.swx;
   if(!ok){swBack();return}
-  sw.bg.remove();sw=null;
-  if(dir<0&&ui.view==="saved"){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP()}
-  else if(dir<0){if(!isRead(id)){P.read.push(id);saveP()}}
-  else if(!isSaved(id)){const a=findArt(id);if(a){P.saved.push(id);P.savedItems[id]=a;saveP()}}
-  render()});
+  const el=sw.el,bg=sw.bg;sw=null;const sn=snapRS();let msg="";
+  if(dir<0&&ui.view==="saved"){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();msg="Retiré de « À lire »"}
+  else if(dir<0){if(!isRead(id)){P.read.push(id);saveP();msg="Marquée comme lue"}}
+  else if(!isSaved(id)){const a=findArt(id);if(a){P.saved.push(id);P.savedItems[id]=a;saveP();msg="Mise de côté dans « À lire »"}}
+  if(msg)toast(msg,sn);
+  // maj-73 : la carte qui disparaît glisse hors de l'écran puis se replie en douceur
+  const gone=dir<0&&(ui.view==="inbox"||ui.view==="saved");
+  if(!gone||matchMedia("(prefers-reduced-motion: reduce)").matches){bg.remove();el.style.transform="";render();return}
+  bg.style.transition="opacity .16s";bg.style.opacity="0";
+  el.style.transition="transform .16s ease-in";el.style.transform="translateX(-110%)";
+  setTimeout(()=>{bg.remove();el.style.height=el.offsetHeight+"px";el.style.overflow="hidden";void el.offsetHeight;
+    el.style.transition="height .2s ease,margin .2s ease,padding .2s ease,opacity .2s,border-width .2s";
+    Object.assign(el.style,{height:"0px",marginTop:"0px",marginBottom:"0px",paddingTop:"0px",paddingBottom:"0px",borderWidth:"0px",opacity:"0"});
+    setTimeout(render,210)},160)});
 document.addEventListener("touchcancel",()=>{if(sw){delete sw.el.dataset.swx;swBack()}});
 document.addEventListener("click",e=>{if(Date.now()-swAt<400){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("pointerdown",e=>{const c=e.target.closest("#crop");if(!c)return;const th=themeOf(ui.lookKey);drag={x:e.clientX,y:e.clientY,dx:th.dx,dy:th.dy,W:c.clientWidth,H:c.clientHeight};c.setPointerCapture(e.pointerId);e.preventDefault()});
@@ -1206,8 +1313,11 @@ function render(){renderTop();const v=ui.view;
   renderSheet();applyTheme()}
 
 document.addEventListener("click",e=>{
+  if(e.target.closest("[data-more]")){menuOpen=!menuOpen;renderTop();return}
+  if(e.target.closest("#toastUndo")){undoToast();return}
+  if(menuOpen){menuOpen=false;$("hmenu").hidden=true;$("more").setAttribute("aria-expanded","false");if(!e.target.closest("#hmenu")){renderTop();return}}
   if(e.target.closest("[data-robotcheck]")){load(true);return}
-  const un=e.target.closest("[data-unsave]");if(un){const id=un.dataset.unsave;P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();render();return}
+  const un=e.target.closest("[data-unsave]");if(un){const id=un.dataset.unsave,sn=snapRS();P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();render();toast("Retiré de « À lire »",sn);return}
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(b.id==="reload"||d.refresh){load(true);return}
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
@@ -1219,7 +1329,7 @@ document.addEventListener("click",e=>{
   else if(d.sport){ui.sport=d.sport;ui.team="all";saveUi();$("screen").scrollTop=0}
   else if(d.team){ui.team=ui.team===d.team?"all":d.team;saveUi();$("screen").scrollTop=0}
   else if(d.cat){ui.cat=d.cat}
-  else if(d.allread){visibleUnread().forEach(a=>P.read.push(a.id));saveP()}
+  else if(d.allread){const l=visibleUnread();if(!l.length)return;const sn=snapRS();l.forEach(a=>P.read.push(a.id));saveP();render();toast(l.length>1?l.length+" news marquées comme lues":"1 news marquée comme lue",sn);return}
   else if(d.masked){P.rev=[...(P.rev||[]),d.msg];saveP()}
   else if(d.msg){const art=findArt(d.msg);if(art&&directLink(art)){if(!isRead(d.msg)){P.read.push(d.msg);saveP()}window.open(art.url,"_blank","noopener")}else{ui.open=d.msg;if(!isRead(d.msg)){P.read.push(d.msg);saveP()}$("sheetBody").scrollTop=0}}
   else if(d.close){ui.open=null}
