@@ -437,8 +437,7 @@ select.in{appearance:auto}
 .hmenu .mi[aria-current="true"]{color:var(--accent);font-weight:600}
 .app .sports{padding:0 10px;gap:6px}
 .app .sport{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;min-height:40px;padding:0 6px;border-bottom-width:2px}
-.app .sport .n{background:none;color:var(--bar-muted);font-family:var(--f-body);font-size:11.5px;font-weight:700;padding:0;min-width:0}
-.app .sport[aria-pressed="true"] .n{color:var(--accent)}
+.app .sport .n{background:var(--accent);color:var(--accent-ink);font-family:var(--f-body);font-size:11px;font-weight:800;line-height:17px;min-width:19px;padding:0 6px;border-radius:9px;text-align:center} /* maj-74 : nombre de news non lues bien visible */
 .app .teams{background:transparent;border-bottom:0;border-top:1px solid var(--line);padding:10px 16px 12px}
 .app .team .n{font-family:var(--f-body);font-weight:700;font-size:10px}
 .app .team.ico .n{box-shadow:0 0 0 2px var(--bar)}
@@ -474,6 +473,17 @@ select.in{appearance:auto}
 .toast span{overflow:hidden;text-overflow:ellipsis}
 .toast button{flex:none;min-height:32px;padding:0 4px;font-weight:800;color:color-mix(in srgb,var(--accent) 50%,var(--bg))}
 .toast button[hidden]{display:none}
+
+/* maj-74 : sur ordinateur (souris), boutons « À lire » / « Lu » (ou « Retirer ») au survol d'une carte */
+.hov{display:none}
+@media (hover:hover) and (pointer:fine){
+  .app .msg .hov{display:flex;position:absolute;top:9px;right:12px;z-index:2;gap:6px;opacity:0;transition:opacity .15s}
+  .app .msg:hover .hov{opacity:1}
+  .app .msg.nw.hasimg .hov{right:110px}
+  .app .msg:not(.nw) .hov{top:auto;bottom:9px}
+  .hov .ha{font-size:12.5px;font-weight:600;line-height:1;padding:7px 12px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);color:var(--fg);cursor:pointer;white-space:nowrap}
+  .hov .ha:hover{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+}
 </style>
 </head>
 <body>
@@ -726,11 +736,16 @@ const isNewsCard=a=>!ROBOTSRC.has(a.source)&&!a.table&&!a.fixture&&!a.games&&!a.
 const directLink=a=>isNewsCard(a)&&/^https?:\/\//i.test(a.url||"")&&!isMasked(a); // une news s'ouvre directement sur son site (nouvel onglet)
 function agoFr(iso){const d=Date.now()-Date.parse(iso);if(!(d>=0))return hm(iso);const m=Math.floor(d/6e4);if(m<1)return "à l'instant";if(m<60)return "il y a "+m+" min";const h=Math.floor(m/60);if(h<24)return "il y a "+h+" h"+(m%60?" "+String(m%60).padStart(2,"0"):"");return hm(iso)}
 function sumOf(a){let s=(a.summary||"").replace(/\s+/g," ").trim();const t=(a.title||"").trim();if(t&&s.toLowerCase().startsWith(t.toLowerCase()))s=s.slice(t.length).replace(/^[\s:–—.\-]+/,"");return s.length<3?"":s}
+// maj-74 : boutons du survol (ordinateur) — mêmes actions que le balayage
+function hovActs(a){const id=esc(a.id);let h="";
+  if(ui.view==="saved")h=isSaved(a.id)?`<span class="ha" role="button" data-hact="unsave" data-id="${id}">Retirer</span>`:"";
+  else{if(!isSaved(a.id))h+=`<span class="ha" role="button" data-hact="save" data-id="${id}">À lire</span>`;if(!isRead(a.id))h+=`<span class="ha" role="button" data-hact="read" data-id="${id}">Lu</span>`}
+  return h?`<span class="hov">${h}</span>`:""}
 function newsRow(a){const t=TEAMS()[a.team],un=!isRead(a.id),b=BADGE[a.sport],col=t?t.c1:(b?b[1]:"#55657d"),th=t?(t.label||t.name):(a.sport||""),s=sumOf(a),img=/^https?:\/\//i.test(a.image||"")?a.image:"",ini=(a.source.split(" · ")[0].replace(/[^A-Za-zÀ-ÿ]/g,"").slice(0,2)||"?").toUpperCase(),logo=D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source);
-  return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico${ui.view==="saved"?" unsave":""}" ${ui.view==="saved"?`data-unsave="${esc(a.id)}" aria-label="Retirer de À lire"`:`aria-label="Mis de côté"`}>${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}</button>`}
+  return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico${ui.view==="saved"?" unsave":""}" ${ui.view==="saved"?`data-unsave="${esc(a.id)}" aria-label="Retirer de À lire"`:`aria-label="Mis de côté"`}>${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}${hovActs(a)}</button>`}
 function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
   <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
-  <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span></button>`}
+  <span class="right">${kk?`<span class="kick"><b>${hm(kk)}</b><span>${esc(kickLabel(a,kk))}</span></span>`:isRead(a.id)?`<time>${hm(a.publishedAt)}</time>`:""}${isSaved(a.id)?`<span class="saved-ico" aria-label="Mis de côté">${I.bmkFill}</span>`:""}</span>${m?"":hovActs(a)}</button>`}
 function grouped(list){let h="",last="";for(const a of list){const k=dayKey(a.publishedAt);if(k!==last){h+=`<div class="day">${esc(dayLabel(a.publishedAt))}</div>`;last=k}h+=row(a)}return h}
 function renderInbox(){
   const all=D.articles.filter(a=>inScope(a)&&(ui.cat==="all"||a.cat===ui.cat)),list=all.filter(a=>!isRead(a.id));/* maj-71 : une news lue disparaît de l'inbox (elle reste dans « À lire » si mise de côté) */
@@ -946,6 +961,19 @@ const snapRS=()=>({read:[...P.read],saved:[...P.saved],savedItems:{...P.savedIte
 let toastTimer=null,toastSnap=null;
 function toast(msg,snap){$("toastMsg").textContent=msg;toastSnap=snap||null;$("toastUndo").hidden=!snap;const t=$("toast");t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.classList.remove("show");toastSnap=null},4500)}
 function undoToast(){const sn=toastSnap;toastSnap=null;clearTimeout(toastTimer);$("toast").classList.remove("show");if(!sn)return;P.read=sn.read;P.saved=sn.saved;P.savedItems=sn.savedItems;saveP();render()}
+// maj-74 : une action sur une carte (lu / à lire / retirer) + bandeau Annuler ; la carte qui quitte la liste glisse puis se replie
+function cardAct(el,id,kind,bg){const sn=snapRS();let msg="",gone=false;
+  if(kind==="unsave"){if(!isSaved(id))return false;P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];msg="Retiré de « À lire »";gone=ui.view==="saved"}
+  else if(kind==="read"){if(isRead(id))return false;P.read.push(id);msg="Marquée comme lue";gone=ui.view==="inbox"}
+  else if(kind==="save"){const a=findArt(id);if(isSaved(id)||!a)return false;P.saved.push(id);P.savedItems[id]=a;msg="Mise de côté dans « À lire »"}
+  saveP();toast(msg,sn);
+  if(!gone||!el||matchMedia("(prefers-reduced-motion: reduce)").matches){if(bg)bg.remove();el&&(el.style.transform="");render();return}
+  if(bg){bg.style.transition="opacity .16s";bg.style.opacity="0"}
+  el.style.transition="transform .16s ease-in";el.style.transform="translateX(-110%)";
+  setTimeout(()=>{if(bg)bg.remove();el.style.height=el.offsetHeight+"px";el.style.overflow="hidden";void el.offsetHeight;
+    el.style.transition="height .2s ease,margin .2s ease,padding .2s ease,opacity .2s,border-width .2s";
+    Object.assign(el.style,{height:"0px",marginTop:"0px",marginBottom:"0px",paddingTop:"0px",paddingBottom:"0px",borderWidth:"0px",opacity:"0"});
+    setTimeout(render,210)},160)}
 // ===== Balayage sur une news (tous sports, toutes listes) : vers la gauche = lu, vers la droite = à lire =====
 let sw=null,swAt=0;const SW_MIN=80,SW_EDGE=24; // SW_EDGE : on ignore les gestes partis du bord gauche (geste « retour » du navigateur)
 function swBack(){if(!sw)return;const el=sw.el;if(sw.bg)sw.bg.remove();if(sw.lock){el.style.transition="transform .18s ease";el.style.transform="";setTimeout(()=>{el.style.transition=""},200)}sw=null}
@@ -962,20 +990,9 @@ document.addEventListener("touchmove",e=>{if(!sw)return;const t=e.touches[0],dx=
   Object.assign(sw.bg.style,{top:r0.top+"px",height:r0.height+"px",left:(sw.dir<0?left0+r0.width-w:left0)+"px",width:w+"px"});sw.bg.classList.toggle("go",w>=SW_MIN)},{passive:false});
 document.addEventListener("touchend",()=>{if(!sw)return;if(!sw.lock){sw=null;return}swAt=Date.now();const ok=Math.abs(sw.dx)>=SW_MIN,id=sw.el.dataset.msg,dir=sw.dir;delete sw.el.dataset.swx;
   if(!ok){swBack();return}
-  const el=sw.el,bg=sw.bg;sw=null;const sn=snapRS();let msg="";
-  if(dir<0&&ui.view==="saved"){P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();msg="Retiré de « À lire »"}
-  else if(dir<0){if(!isRead(id)){P.read.push(id);saveP();msg="Marquée comme lue"}}
-  else if(!isSaved(id)){const a=findArt(id);if(a){P.saved.push(id);P.savedItems[id]=a;saveP();msg="Mise de côté dans « À lire »"}}
-  if(msg)toast(msg,sn);
-  // maj-73 : la carte qui disparaît glisse hors de l'écran puis se replie en douceur
-  const gone=dir<0&&(ui.view==="inbox"||ui.view==="saved");
-  if(!gone||matchMedia("(prefers-reduced-motion: reduce)").matches){bg.remove();el.style.transform="";render();return}
-  bg.style.transition="opacity .16s";bg.style.opacity="0";
-  el.style.transition="transform .16s ease-in";el.style.transform="translateX(-110%)";
-  setTimeout(()=>{bg.remove();el.style.height=el.offsetHeight+"px";el.style.overflow="hidden";void el.offsetHeight;
-    el.style.transition="height .2s ease,margin .2s ease,padding .2s ease,opacity .2s,border-width .2s";
-    Object.assign(el.style,{height:"0px",marginTop:"0px",marginBottom:"0px",paddingTop:"0px",paddingBottom:"0px",borderWidth:"0px",opacity:"0"});
-    setTimeout(render,210)},160)});
+  const el=sw.el,bg=sw.bg;sw=null;
+  if(dir>0&&isSaved(id)){bg.remove();el.style.transform="";return}
+  if(cardAct(el,id,dir<0?(ui.view==="saved"?"unsave":"read"):"save",bg)===false){bg.remove();el.style.transform=""}});
 document.addEventListener("touchcancel",()=>{if(sw){delete sw.el.dataset.swx;swBack()}});
 document.addEventListener("click",e=>{if(Date.now()-swAt<400){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener("pointerdown",e=>{const c=e.target.closest("#crop");if(!c)return;const th=themeOf(ui.lookKey);drag={x:e.clientX,y:e.clientY,dx:th.dx,dy:th.dy,W:c.clientWidth,H:c.clientHeight};c.setPointerCapture(e.pointerId);e.preventDefault()});
@@ -1317,7 +1334,8 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#toastUndo")){undoToast();return}
   if(menuOpen){menuOpen=false;$("hmenu").hidden=true;$("more").setAttribute("aria-expanded","false");if(!e.target.closest("#hmenu")){renderTop();return}}
   if(e.target.closest("[data-robotcheck]")){load(true);return}
-  const un=e.target.closest("[data-unsave]");if(un){const id=un.dataset.unsave,sn=snapRS();P.saved=P.saved.filter(x=>x!==id);delete P.savedItems[id];saveP();render();toast("Retiré de « À lire »",sn);return}
+  const ha=e.target.closest("[data-hact]");if(ha){e.preventDefault();cardAct(ha.closest(".msg"),ha.dataset.id,ha.dataset.hact);return}
+  const un=e.target.closest("[data-unsave]");if(un){e.preventDefault();cardAct(un.closest(".msg"),un.dataset.unsave,"unsave");return}
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
   if(b.id==="reload"||d.refresh){load(true);return}
   if(d.syncOn){const v=($("syncTok")?.value||"").trim();if(v)syncSetup(v);return}
