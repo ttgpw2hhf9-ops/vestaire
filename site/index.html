@@ -453,6 +453,8 @@ select.in{appearance:auto}
 .app.themed .msg.ag{background:color-mix(in srgb,var(--c-ag) 11%,var(--panel))}
 .app .msg.nw.hasimg{grid-template-columns:1fr 84px}
 .app .msg.nw .th{width:84px;height:84px}
+.app .msg.nw{padding:13px 16px 14px;gap:7px}
+.app .msg.nw .t{font-size:16.5px;line-height:1.3}
 .app .msg .kick b{font-family:var(--f-body);font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 .app .msg .kick span{font-family:var(--f-body);font-size:11.5px;letter-spacing:0;text-transform:none}
 .app .msg time{font-variant-numeric:tabular-nums}
@@ -741,7 +743,7 @@ function hovActs(a){const id=esc(a.id);let h="";
   if(ui.view==="saved")h=isSaved(a.id)?`<span class="ha" role="button" data-hact="unsave" data-id="${id}">Retirer</span>`:"";
   else{if(!isSaved(a.id))h+=`<span class="ha" role="button" data-hact="save" data-id="${id}">À lire</span>`;if(!isRead(a.id))h+=`<span class="ha" role="button" data-hact="read" data-id="${id}">Lu</span>`}
   return h?`<span class="hov">${h}</span>`:""}
-function newsRow(a){const t=TEAMS()[a.team],un=!isRead(a.id),b=BADGE[a.sport],col=t?t.c1:(b?b[1]:"#55657d"),th=t?(t.label||t.name):(a.sport||""),s=sumOf(a),img=/^https?:\/\//i.test(a.image||"")?a.image:"",ini=(a.source.split(" · ")[0].replace(/[^A-Za-zÀ-ÿ]/g,"").slice(0,2)||"?").toUpperCase(),logo=D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source);
+function newsRow(a){const t=TEAMS()[a.team],un=!isRead(a.id),b=BADGE[a.sport],col=t?t.c1:(b?b[1]:"#55657d"),th=t?(t.label||t.name):(a.sport||""),s="",img="",/* maj-75 : carte de news = titre seul (ni résumé ni vignette) */ini=(a.source.split(" · ")[0].replace(/[^A-Za-zÀ-ÿ]/g,"").slice(0,2)||"?").toUpperCase(),logo=D.sources.some(x=>(x.chip||x.logo)&&x.name===a.source);
   return `<button class="msg nw${un?" unread":""}${img?" hasimg":""}${ui.open===a.id?" sel":""}" data-msg="${esc(a.id)}" style="--c1:${esc(col)}"><span class="nwtop"><span class="sl"><b>${esc(ini)}</b>${logo?`<img src="logos/${esc(srcSlug(a.source))}.png" alt="" onerror="this.remove()">`:""}</span><span class="sn">${esc(a.source)}</span>${th?`<span class="tdot"></span><span class="tn">${esc(th)}</span>`:""}${isSaved(a.id)?`<span class="saved-ico${ui.view==="saved"?" unsave":""}" ${ui.view==="saved"?`data-unsave="${esc(a.id)}" aria-label="Retirer de À lire"`:`aria-label="Mis de côté"`}>${I.bmkFill}</span>`:""}<time>${agoFr(a.publishedAt)}</time></span><span class="txt"><span class="t">${esc(a.title)}</span>${s?`<span class="s">${esc(s)}</span>`:""}</span>${img?`<img class="th" src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hasimg');this.remove()">`:""}${hovActs(a)}</button>`}
 function row(a){if(isNewsCard(a)&&!isMasked(a))return newsRow(a);const m=isMasked(a),t=TEAMS()[a.team],kk=!m&&kickOf(a),ag=!m&&isAg(a);return `<button class="msg ${isRead(a.id)?"":"unread"}${ui.open===a.id?" sel":""}${ag?" ag "+(a.cat==="classement"?"ag-cl":"ag-pre"):""}${kk?" has-kick":""}" data-msg="${esc(a.id)}" ${m?'data-masked="1"':""} style="--c1:${esc(aColor(a))}">${aCrest(a)}
   <span class="body"><span class="from">${isRead(a.id)?"":`<span class="dot" aria-hidden="true"></span><span class="vh">Non lu</span><time>${hm(a.publishedAt)}</time>`}${esc(a.source)} <span class="tag ${esc(a.cat)}">${esc(CATS[a.cat]||a.cat)}</span></span>${m?`<span class="subj masked">${I.eye}${t?esc(t.label||t.name)+" : r":"R"}ésultat caché · touche pour l'afficher</span>`:`<span class="subj">${esc(a.title)}</span>${ag?agExtra(a):""}`}</span>
